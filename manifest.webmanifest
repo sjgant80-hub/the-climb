@@ -1,0 +1,1 @@
+{ "name": "The Climb", "short_name": "The Climb", "start_url": "./", "display": "standalone", "background_color": "#f7f6f2", "theme_color": "#1f6f5c", "description": "A small AI model fails a calculation first, then checks its way to the answer, in your browser tab." }

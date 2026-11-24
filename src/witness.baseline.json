@@ -1,0 +1,47 @@
+[
+ {
+  "mutation": "< → <=",
+  "snippet": "const abs = (a) => (a < 0n ? -a : a);",
+  "reason": "the two differ only at a = 0, where -a and a are both 0: the same result on every input"
+ },
+ {
+  "mutation": "< → <=",
+  "snippet": "const g = gcd(n, d), sign = d < 0n ? -1n : 1n;",
+  "reason": "the two differ only at d = 0, and make() has already returned null for d = 0 on the line above: unreachable"
+ },
+ {
+  "mutation": "< → <=",
+  "snippet": "let out = make(1n), base = e.n < 0n ? make(a.d, a.n) : a;",
+  "reason": "the two differ only for the exponent 0, where the loop below runs no times and base is never used: the result is 1 either way"
+ },
+ {
+  "mutation": "< → <=",
+  "snippet": "while (at < s.length) {",
+  "reason": "with at = s.length the loop body finds nothing left to read and returns the tokens collected so far, which is exactly what leaving the loop returns"
+ },
+ {
+  "mutation": "> → >=",
+  "snippet": "return i > 0 ? evaluate(words.slice(i).join(' ')) : null;",
+  "reason": "with i = 0 no word was let go, so what would be read is the whole side again, which was read and refused a few lines above: null either way"
+ },
+ {
+  "mutation": "> → >=",
+  "snippet": "const mixed = [a, b].findIndex((x) => isNum(x) && x.value.d !== 1n && x.value.n > x.value.",
+  "reason": "the two differ only when the top and bottom of the fraction are equal, which is the number 1, and 1 is held with 1 below it and is excluded by the test just before: unreachable"
+ },
+ {
+  "mutation": "> → >=",
+  "snippet": "const lead = x.terms.findIndex((t) => !t.neg && t.node.op !== '+'), order = lead > 0 ? [x.",
+  "reason": "with lead = 0 the first term is already the one to lead, and putting it first leaves the order as it was: the same text either way"
+ },
+ {
+  "mutation": "< → <=",
+  "snippet": "while (i < words.length && /^[A-Za-z]+$/.test(words[i])) i++;",
+  "reason": "the two differ only when every word of the side is letters; then one more step past the end still leaves nothing to read, and nothing reads as null either way"
+ },
+ {
+  "mutation": "< → <=",
+  "snippet": "const beats = (p) => Math.sign(p.bOnly - p.aOnly) === 1 && p.p < 0.05;",
+  "reason": "an exact McNemar p-value is a whole number over a power of two (vendor/stats.mjs mcnemar), so it is never exactly 0.05: < and <= agree on every possible input"
+ }
+]

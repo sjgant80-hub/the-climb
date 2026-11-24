@@ -1,0 +1,2016 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Climb — a small AI fails first, then checks its way to the answer</title>
+<meta name="description" content="A small AI model runs in your browser tab, fails a calculation at the first try, and climbs to the right answer pass by pass, because a checker that is not the model keeps its true steps and drops its false ones. Measured on sealed problems, failures kept, re-runnable on your own machine.">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--series:#0f8a6c;--series2:#b0562f;--series3:#5b6ad0;--bg:#f7f6f2;--panel:#ffffff;--ink:#1d1f23;--muted:#5d636d;--line:#dcd9d0;--accent:#1f6f5c;--accent-ink:#ffffff;--ok:#1d7a46;--ok-bg:#e3f3e9;--no:#a33a2c;--no-bg:#f8e5e1;--warn:#8a5a00;--warn-bg:#fbf0d9;--code:#f0eee8;--chip:#ecebe5;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}}
+:root[data-theme="dark"]{--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 16px env(safe-area-inset-bottom,0)}
+main{max-width:980px;margin:0 auto;padding-block:8px 64px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -16px;padding:8px 16px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--ink);text-decoration:none;font-size:14px;padding:4px 8px;border-radius:6px}
+nav a:hover{background:var(--chip)}
+nav .brand{font-weight:700;margin-right:6px}
+nav button{margin-left:auto}
+h1{font-size:clamp(26px,5vw,40px);line-height:1.15;margin:28px 0 12px}
+h2{font-size:clamp(21px,3.4vw,27px);margin:48px 0 10px;scroll-margin-top:64px}
+h3{font-size:18px;margin:22px 0 8px}
+p{margin:0 0 12px}
+a{color:var(--accent)}
+.lead{font-size:18px;max-width:780px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{background:var(--chip);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip b{font-variant-numeric:tabular-nums}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.grid{display:grid;gap:12px}
+.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.three{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+ol.steps{padding-left:22px}
+ol.steps li{margin:0 0 14px}
+code,pre,textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+code{background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{background:var(--code);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+textarea{width:100%;min-height:120px;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+input[type=number],input[type=text],select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;max-width:100%}
+input[type=text]{width:100%}
+label{font-size:14px}
+button{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:7px 12px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.verdict{border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:600}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)}
+.verdict.no{background:var(--no-bg);color:var(--no)}
+.verdict.wait{background:var(--warn-bg);color:var(--warn)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pass{color:var(--ok);font-weight:700}.fail{color:var(--no);font-weight:700}.pend{color:var(--warn);font-weight:700}
+.badge{display:inline-block;border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;white-space:nowrap}
+mark{background:var(--ok-bg);color:var(--ok);padding:0 2px;border-radius:3px;font-weight:700}
+pre.live{min-height:38px;border-left:3px solid var(--accent)}
+.desk{margin:0}
+#viewBar button{margin-left:6px;padding:3px 8px}
+details.card>summary{font-weight:600}
+.stage{border-left:3px solid var(--line);padding:4px 0 4px 12px;margin:8px 0}
+.stage.ok{border-color:var(--ok)}.stage.no{border-color:var(--no)}
+.bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+svg text{fill:var(--ink);font:13px system-ui,sans-serif}
+svg .muted{fill:var(--muted)}
+.diagram{width:100%;height:auto;max-width:900px}
+.kpi{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;font-weight:600}
+footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted)}
+@media (max-width:640px){nav{position:static}nav a{font-size:13px;padding:3px 5px}.kpi{font-size:22px}h2{scroll-margin-top:8px}}
+</style>
+</head>
+<body>
+<nav aria-label="Sections">
+  <a class="brand" href="#top">The Climb</a>
+  <a href="#live">Watch it</a><a href="#start">Start here</a><a href="#results">Results</a><a href="#wall">The wall</a><a href="#claims">Claims</a><a href="#how">How it works</a>
+  <a href="#blueprint">Blueprint</a><a href="#adopt">Adoption</a><a href="#brochure">For buyers</a><a href="#paper">White paper</a>
+  <button class="ghost" id="theme" type="button" aria-label="Switch light or dark">Theme</button>
+</nav>
+<main id="top">
+<h1>A small AI fails first, then checks its way to the answer</h1>
+<p class="lead">The Climb is a web page that runs a small AI model on your own computer and shows it working a calculation it gets wrong at the first try. A checker that is not the model reads every line it writes. A step that is true is kept and crossed off the calculation. A step that is false is dropped, and split into smaller steps. What is left to do goes back to the model, so every pass starts from a smaller problem than the last, until the checker says the answer is right, or until it is clear this problem is beyond it. Both endings are shown.</p>
+<p>A calculator gets these sums right at once. That is not the point. The point is the pattern: a small model that cannot do a job in one go, made to finish it by something outside it that can say "this step is right, that one is not". The same pattern fits any work where a step can be checked by code. Everything here was measured on tasks sealed before the run, the failures are kept, and you can run all of it again on your own machine.</p>
+<p><b>What was measured:</b> <span data-bind="hl.result">The sealed run has not been made yet. The build, the problems and the claims are in place, and the numbers will appear here when it is run.</span></p>
+<div class="chips" aria-label="Headline numbers">
+  <span class="chip">right at the first try <b data-bind="hl.cold"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">right after the climb <b data-bind="hl.climb"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">told only "not right", same number of tries <b data-bind="hl.retry"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">re-reading its own work, no checker <b data-bind="hl.naive"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">problems the climb did not reach <b data-bind="hl.wall"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">model calls, climb against one try <b data-bind="hl.cost"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">data sent off the device <b data-bind="hl.privacy"><span class="pend">not measured yet</span></b></span>
+  <span class="chip">charge per problem <b>$0</b> <span class="muted">(one model download, then your own hardware)</span></span>
+</div>
+<p class="small muted" data-bind="hl.note">Nothing has been measured on the sealed problems yet.</p>
+<div id="viewBar" class="card small" aria-live="polite">Showing the published sealed run: not measured yet. Run step 5 to see your own device's numbers on this page.</div>
+
+<h2 id="live">Watch one climb</h2>
+<p>Press the button, or press Enter. The model runs in this tab on your own graphics chip. The first time, it downloads once (about 880 MB) and is kept by your browser. Below is a climb recorded on the machine named under it. Once you run one, it is replaced by yours, whatever yours does.</p>
+<div class="card">
+  <div class="row"><label for="which">Problem</label><select id="which"></select><button id="watch" type="button">Watch it climb</button><span class="small muted" id="watchOut" aria-live="polite"></span></div>
+  <div id="glass"><p class="small muted">Recorded, not live: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-23 (dev set, energy:20261101-0).</p><p><b>A 26 kg cart moves at 21 m/s. Kinetic energy = 0.5 × mass × speed × speed. How many joules?</b></p><div class="stage no"><b>Pass 1 of 8</b><div><div><span class="fail">✗</span> 0.5 × 26 × 21 = 0.5 × 552 = 276 <span class="small muted">dropped</span></div><div><span class="fail">✗</span> ANSWER: 276 <span class="small fail">not right</span></div></div><div class="small"><b>Left to do:</b> <code>0.5 × 26 × 21 × 21</code></div></div><div class="stage ok"><b>Pass 2 of 8</b><details><summary class="small">what the checker said first</summary><pre>Wrong: 0.5 × 26 × 21 = 0.5 × 552
+Left to do: 0.5 × 26 × 21 × 21
+One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 0.5 × 26 = 13 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 13 × 21 = 273 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 273 × 21 = 5733 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> ANSWER: 5733 <span class="small pass">right: home</span></div></div></div><div class="verdict ok">Home at pass 2: the checker ruled the answer right.</div></div>
+</div>
+
+<h2 id="start">Start here</h2>
+<ol class="steps">
+  <li><b>Check this device.</b> <span id="device" aria-live="polite">Checking…</span></li>
+  <li><b>Load the model.</b> <div class="row"><label for="model">Model</label><select id="model"></select><button id="load" type="button">Load the model</button></div>
+    <div class="bar" aria-hidden="true"><i id="loadBar"></i></div><div id="loadOut" class="small" aria-live="polite">Nothing is downloaded until you press the button.</div></li>
+  <li><b>Watch one climb.</b> Use the panel above. Each pass shows what the model wrote, which lines the checker kept and dropped, and what the checker said back.</li>
+  <li><b>Try a calculation of your own.</b> Type any sum with numbers, + - × ÷ and brackets. The checker works out the right answer exactly; the model has to earn it.
+    <div class="row"><input type="text" id="ownIn" value="(37 × 48 + 912) × 6" aria-label="Your calculation"><button id="ownGo" type="button">Climb it</button></div><div id="ownOut" aria-live="polite"></div></li>
+  <li><b>Run the measurement yourself.</b> This runs every problem through all four loops on this device and fills this whole page with your own numbers. It saves as it goes, so you can close the tab and carry on later.
+    <div class="row"><label for="runWhich">Set</label><select id="runWhich"><option value="sample">Sample: 8 problems, a few minutes</option><option value="dev">Dev: the 40 problems the build was tuned on</option><option value="sealed">Sealed: the 96 problems the claims are judged on</option></select><button id="run" type="button">Run it</button><button class="ghost" id="save" type="button" disabled>Save my results</button></div>
+    <div class="bar" aria-hidden="true"><i id="runBar"></i></div><div id="runOut" class="small" aria-live="polite"></div></li>
+  <li><b>Check the published runs.</b> Every published run holds every reply the model gave. This button hands those replies back to the code on this page, with no model, and counts how many decisions come out the same.
+    <div class="row"><button id="rejudge" type="button">Re-judge the published runs</button></div><div id="rejudgeOut" class="small" aria-live="polite"></div></li>
+  <li><b>Measure what the GPU reuses.</b> A problem's passes are one growing conversation, so the browser can keep what it worked out for the earlier turns. This times the same passes both ways on this device.
+    <div class="row"><button id="kv" type="button">Measure the reuse here</button></div><div id="kvOut" class="small" aria-live="polite"></div></li>
+</ol>
+
+<h2 id="results">Results</h2>
+<p>Four loops ran the same sealed problems on the same model. <b>One try</b>: the model, cold, once. <b>Retry</b>: told only "that answer is not right", up to the same number of passes. <b>Naive</b>: asked to re-read and correct its own work, with nothing checking it. <b>The climb</b>: every line ruled on, wrong steps split, kept steps remembered. The chart shows the share of problems with a right answer after each pass.</p>
+<div id="curve"><span class="pend">not measured yet</span></div>
+<h3>Loop by loop</h3>
+<div class="tbl" id="arms"><table><thead><tr><th>loop</th><th class="num">right after pass 1</th><th class="num">right after pass 8</th><th class="num">model calls</th><th class="num">passes per problem</th></tr></thead><tbody><tr><td>one try</td><td colspan="4"><span class="pend">not measured yet</span></td></tr><tr><td>retry (told only &quot;not right&quot;)</td><td colspan="4"><span class="pend">not measured yet</span></td></tr><tr><td>naive (re-reads its own work)</td><td colspan="4"><span class="pend">not measured yet</span></td></tr><tr><td>the climb, no memory between problems</td><td colspan="4"><span class="pend">not measured yet</span></td></tr><tr><td>the climb</td><td colspan="4"><span class="pend">not measured yet</span></td></tr></tbody></table></div>
+<h3>By kind of problem</h3>
+<p class="small">The problems were sorted into three tiers before anything was measured: easy (expected right at the first try), climb (expected wrong first, reachable with checked steps) and wall (expected out of reach). The tiers are predictions, and this table shows where they were wrong.</p>
+<div class="tbl" id="tiers"><span class="pend">not measured yet</span></div>
+<h3>Each part's own number</h3>
+<div class="tbl" id="parts"><table><thead><tr><th>part</th><th>measured</th><th>what it is</th></tr></thead><tbody><tr><td><b>The lift</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">what checked depth added over a single try</td></tr><tr><td><b>Depth multiplier</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">right after the climb ÷ right at one try</td></tr><tr><td><b>The memory</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">measured against an exact list of everything stored</td></tr><tr><td><b>What the memory changed</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">the same climb with and without memory between problems</td></tr><tr><td><b>GPU reuse</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">run step 7 to measure it on this device</td></tr><tr><td><b>Cost of depth</b></td><td><span class="pend">not measured yet</span></td><td class="small muted">the price of the lift, in compute</td></tr></tbody></table></div>
+
+<h2 id="wall">The wall</h2>
+<p>These are the problems the climb did not reach, in red, with where each one stopped. They are here because a climb that always wins is the one not to believe. Some have nothing to climb by: finding two primes from their product gives no partial credit, so there is no step to keep. Others can be split, and the model still could not hold the pieces together within the passes allowed.</p>
+<div class="tbl" id="wallList"><span class="pend">not measured yet</span></div>
+
+<h2 id="claims">The claims, registered before the run</h2>
+<p>Every claim and its bar was committed before the model saw a sealed problem: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">CLAIMS.md</a>. The code and settings were frozen by hash before the run: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/SEAL.md">SEAL.md</a>. The verdicts are worked out on this page from the recorded runs. A claim that failed stays here, failed, in red.</p>
+<div class="tbl" id="claimsTable"><table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody><tr><td><b>C1</b> The climb lifts</td><td class="small">the climb gets at least 20 points more of the sealed problems right by its last pass than one try does, and more by an exact two-sided McNemar test, p &lt; 0.05</td><td class="small">Not measured yet: needs the retry loop and the climb on the sealed problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C2</b> Checking is what does it</td><td class="small">the climb gets more of the sealed problems right by its last pass than the retry loop does with the same number of passes, by the same test, p &lt; 0.05</td><td class="small">Not measured yet: needs the retry loop and the climb on the sealed problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C3</b> Left alone, it does not climb</td><td class="small">the naive loop, at its last pass, has at most 5 points more of the sealed problems right than one try</td><td class="small">Not measured yet: needs the retry loop and the naive loop on the sealed problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C4</b> The memory earns its place</td><td class="small">with the memory, the climb gets at least as many sealed problems home as without it, and takes fewer passes of the model to do it</td><td class="small">Not measured yet: needs the climb with and without the memory on the sealed problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C5</b> Easy is easy</td><td class="small">at least 80% of the easy tier right at one try</td><td class="small">Not measured yet: needs one try on the sealed easy problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C6</b> The climb tier climbs</td><td class="small">on the climb tier, at most 50% right at one try, and at least 40 points more after the climb</td><td class="small">Not measured yet: needs one try and the climb on the sealed climb-tier problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C7</b> The wall holds</td><td class="small">at most 20% of the wall tier home after the climb</td><td class="small">Not measured yet: needs the climb on the sealed wall problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr><tr><td><b>C8</b> Each pass squares what is left</td><td class="small">on the climb tier, after every pass the share not yet home is at most the square of the share not yet home one pass earlier</td><td class="small">Not measured yet: needs the climb on the sealed climb-tier problems</td><td><span class="pend">NOT MEASURED YET</span></td><td class="small"><span class="badge">UNVERIFIED HERE</span></td></tr></tbody></table></div>
+
+<h2 id="how">How it works</h2>
+<p>One pass has four beats. They repeat until the answer is right or the climb stops.</p>
+<svg class="diagram" viewBox="0 0 900 250" role="img" aria-labelledby="beatTitle"><title id="beatTitle">Try, check, remember, reuse: the model writes working, the checker keeps true lines and drops false ones, kept lines go into the memory, and the next pass starts from what was kept</title>
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--muted)"/></marker></defs>
+  <g fill="none" stroke="var(--line)" stroke-width="2"><rect x="20" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="250" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="480" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="710" y="60" width="170" height="70" rx="10" fill="var(--panel)"/>
+  <path d="M200 95h50M430 95h50M660 95h50" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <path d="M795 130v60a10 10 0 0 1-10 10H120a10 10 0 0 1-10-10v-60" stroke="var(--muted)" marker-end="url(#ar)"/><path d="M340 60V32" stroke="var(--ok)"/></g>
+  <text x="110" y="90" text-anchor="middle">1 · Try</text><text x="110" y="112" text-anchor="middle" class="muted">the model writes working</text>
+  <text x="340" y="90" text-anchor="middle">2 · Check</text><text x="340" y="112" text-anchor="middle" class="muted">code: keep or drop each step</text>
+  <text x="570" y="90" text-anchor="middle">3 · Remember</text><text x="570" y="112" text-anchor="middle" class="muted">true steps go in the memory</text>
+  <text x="795" y="90" text-anchor="middle">4 · Reuse</text><text x="795" y="112" text-anchor="middle" class="muted">the GPU keeps earlier turns</text>
+  <text x="340" y="24" text-anchor="middle" fill="var(--ok)">answer right: home, stop</text>
+  <text x="450" y="224" text-anchor="middle" class="muted">not home: what is left to do goes back in, with wrong steps split, and the next pass starts from a smaller problem</text>
+</svg>
+<ol class="steps">
+  <li><b>Try.</b> The model is asked to write its working one small step per line, as <code>working = number</code>, and to end with <code>ANSWER: number</code>. It is the only part that guesses.</li>
+  <li><b>Check.</b> The checker is code. It reads each line, works the left side out exactly with whole-number fractions, and compares. True: kept. False: dropped. It never says what the right number would have been. It rules on the final answer the same way. The checker also holds the calculation the problem asks for. Each true line that is a step of it is crossed off with the value the model wrote, and a false step is replaced by smaller steps made from its own numbers: <code>144 × 45</code> becomes <code>144 × 40 + 144 × 5</code>. What remains is sent back as <b>Left to do</b>, so every pass starts from a smaller problem than the last. A true line that is no part of the calculation is not called right, and a smaller step that is dropped is split again.</li>
+  <li><b>Remember.</b> A kept step is written once into a memory with twelve chambers, placed by its digits so that steps about the same numbers sit together. Before the model is asked, the memory is asked for every step the problem has to do. A step it holds is crossed off there and then, and named to the model as already checked. Only checked steps ever go in.</li>
+  <li><b>Reuse.</b> A problem's passes are one growing conversation. The browser keeps what it computed for the earlier turns, so a later pass only reads the new part. The saving is measured, not assumed.</li>
+</ol>
+<p><b>Why not just let the model re-read its own work?</b> That is the "naive" loop in the results. Nothing outside the model tells it which line is wrong, so it can change a right answer into a wrong one as easily as the other way. The climb differs in one thing only: something that is not the model rules on every step.</p>
+<h3>One real climb, pass by pass</h3>
+<p class="small muted">Taken from the published run as recorded, and decided again by the code on this page.</p>
+<div id="trace"><span class="pend">not measured yet</span></div>
+
+<h2 id="blueprint">Blueprint</h2>
+<div class="tbl"><table><thead><tr><th>part</th><th>what it is</th><th>status</th></tr></thead><tbody>
+<tr><td>The model</td><td>Llama 3.2 1B Instruct at 4 bits, run by WebLLM 0.2.79 on WebGPU, always picking its likeliest word, so a run can be repeated.</td><td class="pass">built, measured</td></tr>
+<tr><td>Exact arithmetic</td><td>Every number is a fraction of two whole numbers, so nothing is rounded and "equal" means equal (<code>src/exact.mjs</code>).</td><td data-bind="bp.exact"><span class="pass">built, gated 94/98 (4 equivalent, with the reason written down)</span></td></tr>
+<tr><td>The checker</td><td>Reads each line of a reply as a claim, keeps the true ones, drops the false ones, and rules on the answer. Three kinds of finish line: an exact value, two factors that multiply to a number, a value that satisfies an equation (<code>src/checker.mjs</code>).</td><td data-bind="bp.checker"><span class="pass">built, gated 51/53 (2 equivalent, with the reason written down)</span></td></tr>
+<tr><td>The planner</td><td>Splits a dropped step into smaller steps by place value, and a carry into a step of its own. A split never contains a result (<code>src/plan.mjs</code>).</td><td data-bind="bp.plan"><span class="pass">built, gated 70/71 (1 equivalent, with the reason written down)</span></td></tr>
+<tr><td>What is left</td><td>Holds the calculation a problem asks for, crosses off each step the model gets right, and puts a split in place of a wrong step. Every change is accepted only if what is left still has the exact value it started with (<code>src/left.mjs</code>).</td><td data-bind="bp.left"><span class="pass">built, gated 164/165 (1 equivalent, with the reason written down)</span></td></tr>
+<tr><td>The memory</td><td>The estate's own twelve-chamber memory kernel, taken from the estate-nest repository with its code unchanged (<code>vendor/memory.mjs</code>), with an exact list beside it used only to measure what the map finds (<code>src/keep.mjs</code>).</td><td data-bind="bp.memory"><span class="pass">built, gated 20/20</span></td></tr>
+<tr><td>The loops</td><td>The climb, and the two plainer loops it is measured against: retry and naive (<code>src/loop.mjs</code>).</td><td data-bind="bp.loop"><span class="pass">built, gated 69/69</span></td></tr>
+<tr><td>The problems</td><td>Made by code in sheets of eight that share one setting's numbers, each with its finish line worked out when it is made (<code>src/tasks.mjs</code>).</td><td data-bind="bp.tasks"><span class="pass">built, gated 15/15</span></td></tr>
+<tr><td>Scores and claims</td><td>Every number and every verdict on this page (<code>src/score.mjs</code>, <code>src/claims.mjs</code>).</td><td data-bind="bp.score"><span class="pass">built, gated 79/80 (1 equivalent, with the reason written down)</span></td></tr>
+<tr><td>GPU reuse</td><td>WebLLM keeps its work for a conversation that continues. The loops are written as one growing conversation so that it can. Measured on this page.</td><td data-bind="bp.reuse"><span class="pend">not measured yet</span></td></tr>
+</tbody></table></div>
+<p class="small">Each part marked "gated" has been through a mutation gate: a tool changes the code in small ways, one at a time, and the tests must notice every change. The counts are read from <a href="data/gates.json">the gate record</a>, which the repository's own checks re-run on every push.</p>
+
+<h2 id="adopt">Adoption: what this does for your business</h2>
+<div class="grid two">
+<div class="card"><h3>Where it fits</h3><p>Work with several steps where each step can be checked by code, and where a wrong result costs more than a slow one. Reconciling a ledger line by line. Filling a form whose fields must add up. Converting units through a chain. Generating code that has to pass tests. In each, the checking code already exists or is cheap to write. What this pattern adds is the loop around it: keep what passed, split what failed, try again from there.</p></div>
+<div class="card"><h3>Where it does not</h3><p>Work with no checker. If nothing outside the model can say whether a step is right, there is nothing to keep and nothing to drop, and this page's own "naive" loop shows what is left. Judgement calls, open questions and anything creative are out. So are problems with no partial credit: see <a href="#wall">the wall</a>.</p></div>
+</div>
+<h3>Rolling it out</h3>
+<ol>
+  <li>Pick one multi-step job where you already have, or can write, a check for each step.</li>
+  <li>Write that check as code. It must never be a model, and it must never hand the model the right value.</li>
+  <li>Run the job one try only, on your own cases, and count how often it finishes. That is your baseline.</li>
+  <li>Run it with the loop: check each step, keep, split, retry. Count again, and count the extra model calls.</li>
+  <li>Keep the cases it never finishes. They tell you where a person, or a bigger model, is still needed.</li>
+</ol>
+
+<h2 id="brochure">For buyers: the case, without hedging</h2>
+<div class="grid two">
+<div class="card"><h3>What it is</h3><p>A measured demonstration that a small model on ordinary hardware can be made to finish multi-step work it fails at cold, when every step is checked by code. <span data-bind="b.what">The lift is not measured yet.</span></p></div>
+<div class="card"><h3>What it is not</h3><p>It is not a calculator and it is not a general assistant. It does not make the model smarter. It makes the model's mistakes visible one step at a time and gives it another go at the wrong step only. <span data-bind="b.not">The limits are not measured yet.</span></p></div>
+<div class="card"><h3>Chief executive</h3><p>The question to ask of any AI system is what happens when it is wrong. Here a wrong step is caught by code before it reaches an answer, and the system either gets there or says it did not. Both are counted on this page.</p></div>
+<div class="card"><h3>Finance</h3><p>The price of the climb is model calls. <span data-bind="b.cost">The cost is not measured yet.</span> On your own hardware those calls cost electricity, not tokens. The table below prices the same tokens at cloud rates so you can see what the loop would cost if you bought it by the token.</p></div>
+<div class="card"><h3>Operations</h3><p>Every pass is recorded: what the model wrote, which lines were kept and dropped, what the checker said back. A problem that does not finish is handed to a person with that record, so they start from the kept steps and not from nothing.</p></div>
+<div class="card"><h3>Technology and security</h3><p>No server, no account, no API key. The model and the checker run in the browser tab. <span data-bind="b.req">The network-request count is not measured yet.</span> The model files come from the public WebLLM model library and are cached by the browser; their hashes are not pinned by this page, which is a limit stated here plainly.</p></div>
+</div>
+<h3>What the loop costs</h3>
+<div class="tbl" id="money"><span class="pend">not measured yet</span></div>
+<h3>Security, compliance and data protection</h3>
+<ul>
+  <li><b>Where your data goes.</b> Nowhere. A problem you type is handled in the tab. The page makes no request while it works; the count is measured by the browser and shown above.</li>
+  <li><b>What is downloaded.</b> This page, the WebLLM library, and the model weights, once. After that it works offline.</li>
+  <li><b>What is kept.</b> Your own runs are saved in your browser's local storage on this device so a long run can resume. Clearing site data removes them. Nothing is sent anywhere.</li>
+  <li><b>Audit trail.</b> A saved run holds every model reply and every ruling, and can be decided again by the code with no model: step 6 does that for the published runs.</li>
+  <li><b>Licence and ownership.</b> MIT licence. You can run it, change it and ship it. The model has its own licence from its publisher.</li>
+</ul>
+<h3>Deployment, support and ownership</h3>
+<p>It is one HTML file and its data. Host it on any static web server, or open it from disk. Supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a>. Support is agreed per deployment, in each deployment's agreement. To put the pattern around your own job, the work is writing your checker; the loop, the memory and the page are here.</p>
+<h3>Risks, answered straight</h3>
+<ul>
+  <li><b>"It is only arithmetic."</b> Yes. Arithmetic was chosen because the finish line cannot be argued with. The pattern carries to any job with a step checker, and nothing here measures such a job. That would be your test to run.</li>
+  <li><b>"The checker knows the answer, so it could just give it."</b> It could. It does not: it says right or wrong for a line the model wrote, splits a wrong step, and shows what is left to do. Every value it crosses off is one the model wrote. You can read every message it sent in any recorded climb.</li>
+  <li><b>"The checker holds the calculation. Is that not most of the work?"</b> It is real help, and it is the point. The checker knows what the problem asks for and keeps the books: what is done, what is left. The model still has to do every step. The retry loop is the same model with the same number of tries and none of that help, and the gap between the two is what the books are worth. For your own job this is the part you write: the steps the job needs, as code that can tell when each is done.</li>
+  <li><b>"More tries would have got there anyway."</b> That is what the retry loop measures: the same number of tries, told only "not right". <span data-bind="b.retry">The comparison is not measured yet.</span></li>
+  <li><b>"It costs more compute."</b> Yes. <span data-bind="b.cost2">The cost is not measured yet.</span></li>
+  <li><b>"Some problems never finish."</b> Yes. <span data-bind="b.wall">The count is not measured yet.</span> They are listed under <a href="#wall">the wall</a>.</li>
+  <li><b>"Not every laptop has WebGPU."</b> Step 1 checks this. Without it the model cannot run here, but the published runs can still be re-judged here.</li>
+</ul>
+<h3>The case for the board</h3>
+<p>Most of the cost of AI in real work is the wrong answer nobody noticed. This shows one way to stop it at the step where it happens, on hardware you already own, with the result measured in public and the failures left in. <span data-bind="b.board">The result is not measured yet.</span> Start with one job that has a checker, and decide on your own numbers.</p>
+<div id="walk"></div>
+
+<h2 id="paper">White paper: checked depth</h2>
+<p><b>The problem.</b> A language model can be asked to look at its own answer and improve it. Left alone, this helps less than it sounds. The model has no way to know which part was wrong, so a second look is as likely to break a right step as to fix a wrong one, and by the fifth pass it is mostly reading its own mistakes back.</p>
+<p><b>The idea.</b> Put something outside the model that can rule on a step. Then each pass can stand on what the last pass got right. The steps that were checked are never in doubt again; only the wrong ones are worked again, in smaller pieces. Depth then adds up instead of washing out.</p>
+<p><b>What this page tests.</b> Whether that is true for a small model on real hardware, by how much, and at what cost. It runs the same problems four ways and reports all four. It also tests the stronger version of the idea, that each pass should shrink what is left as fast as squaring does, and reports whether it held.</p>
+<p><b>What it does not show.</b> That the model learned anything. The model at the last pass is the model at the first. What changed is what it was standing on.</p>
+<p><b>The one rule.</b> A number is on this page only because the checker or the clock measured it in a recorded run. Nothing here was written down first and hoped for. Where a prediction was wrong, the prediction and the measurement are both shown.</p>
+<p class="small muted" data-bind="paper.sources">No run is published yet.</p>
+<footer>
+  <p>The Climb · built by Kar · MIT licence (holder Simon Gant) · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a> ·
+  <a href="https://github.com/sjgant80-hub/the-climb">source</a> · <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">claims</a> · <a href="data/published.json">the published runs</a></p>
+</footer>
+</main>
+<script type="module">
+// src/sha256.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const SHA = (() => {
+// sha256.mjs — SHA-256 of a string's UTF-8 bytes, as lowercase hex. Pure and synchronous, so the lane check that
+// compares a retrieved passage with the signed corpus runs the same in the tab and in Node (FIPS 180-4).
+const K = [
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+  0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+  0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+  0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
+  0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+  0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+];
+const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+// utf8(s) → the UTF-8 bytes of s (lone surrogates become U+FFFD, as TextEncoder does)
+function utf8(s) {
+  const out = [];
+  const t = typeof s === 'string' ? s : '';
+  for (let i = 0; i < t.length; i++) {
+    let c = t.charCodeAt(i);
+    // a high surrogate followed by a low one is one character (past the end, charCodeAt is NaN, which is not a low one)
+    if (c >= 0xd800 && c <= 0xdbff && (t.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      c = 0x10000 + ((c - 0xd800) << 10) + (t.charCodeAt(++i) - 0xdc00);
+    } else if (c >= 0xd800 && c <= 0xdfff) c = 0xfffd;
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+  }
+  return out;
+}
+
+// sha256(s) → hex digest of the UTF-8 bytes of s; anything that is not a string hashes as the empty string
+function sha256(s) {
+  const bytes = utf8(s);
+  const bits = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  for (let i = 7; i >= 0; i--) bytes.push(Math.floor(bits / 2 ** (8 * i)) & 255);
+  const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+  const w = new Array(64);
+  for (let o = 0; o < bytes.length; o += 64) {
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      // the message schedule, one word per round: the block's own 16 words, then each from four earlier ones
+      if (i < 16) w[i] = (bytes[o + 4 * i] << 24) | (bytes[o + 4 * i + 1] << 16) | (bytes[o + 4 * i + 2] << 8) | bytes[o + 4 * i + 3];
+      else {
+        const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map((x) => (x >>> 0).toString(16).padStart(8, '0')).join('');
+}
+return { utf8, sha256 };
+})();
+
+// vendor/stats.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const STATS = (() => {
+// DocDec v2 · src/stats.mjs — the paired test every claim is judged by (exact two-sided McNemar), pure.
+
+const fin = (x) => (typeof x === 'number' && Number.isFinite(x));
+const arr = (x) => (Array.isArray(x) ? x : []);
+
+// lnChoose(n, k) → ln C(n, k), summed exactly in logs (n here is at most a few thousand)
+function lnChoose(n, k) {
+  if (!Number.isInteger(n) || !Number.isInteger(k) || k < 0 || k > n) return -Infinity;
+  const m = Math.min(k, n - k);
+  let s = 0;
+  for (let i = 1; i <= m; i++) s += Math.log(n - m + i) - Math.log(i);
+  return s;
+}
+
+// overPow2(x, n) → the BigInt x divided by 2^n, as a Number. Only integer steps, conversions the language defines exactly
+// (BigInt → Number rounds to nearest) and division by exact powers of two, so every engine returns the same bits.
+function overPow2(x, n) {
+  let s = 0;
+  while (Number(x >> BigInt(s)) === Infinity) s += 64;   // too big to convert (past ~2^1024): drop low bits until it fits
+  let v = Number(x >> BigInt(s)), e = n - s;
+  while (e > 0) { const step = Math.min(e, 1000); v /= Number(1n << BigInt(step)); e -= step; }
+  while (e < 0) { const step = Math.min(-e, 1000); v *= Number(1n << BigInt(step)); e += step; }
+  return v;
+}
+
+// mcnemar(b, c) → exact two-sided p for b discordant pairs one way and c the other (binomial, p = 1/2).
+// The tail Σ C(n, i), i ≤ min(b, c), is summed in whole numbers and divided by 2^n once (overPow2), so the p-value is
+// identical in every browser and in Node: summing exp(log …) terms instead differs in the last digit from engine to
+// engine, because the language leaves the last bit of Math.exp and Math.log to each implementation.
+function mcnemar(b, c) {
+  const B = Number.isInteger(b) ? Math.max(0, b) : 0, Cc = Number.isInteger(c) ? Math.max(0, c) : 0;
+  const n = B + Cc;
+  if (n === 0) return 1;
+  const k = Math.min(B, Cc), N = BigInt(n);
+  let term = 1n, tail = 1n;
+  for (let i = 1; i <= k; i++) { term = (term * (N - BigInt(i) + 1n)) / BigInt(i); tail += term; }
+  return Math.min(1, overPow2(2n * tail, n));
+}
+
+// paired(a, b) — a, b: arrays of 0/1 outcomes for the same questions in the same order. → { aOnly, bOnly, p, a, b, n }
+function paired(a, b) {
+  const A = arr(a), B = arr(b);
+  const n = Math.min(A.length, B.length);
+  let aOnly = 0, bOnly = 0, sa = 0, sb = 0;
+  for (let i = 0; i !== n; i++) {
+    const x = A[i] ? 1 : 0, y = B[i] ? 1 : 0;
+    sa += x; sb += y;
+    if (x === 1 && y === 0) aOnly++;
+    if (x === 0 && y === 1) bOnly++;
+  }
+  return { n, a: sa, b: sb, aOnly, bOnly, p: mcnemar(aOnly, bOnly) };
+}
+
+// beats(a, b, alpha) → true when a is right on more questions than b AND the difference is significant at alpha
+function beats(a, b, alpha) {
+  const t = paired(a, b);
+  const al = fin(alpha) ? alpha : 0.05;
+  return t.aOnly > t.bOnly && t.p < al;
+}
+
+function median(xs) {
+  const v = arr(xs).filter(fin).slice().sort((x, y) => x - y);
+  if (v.length === 0) return null;
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 === 1 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+return { lnChoose, overPow2, mcnemar, paired, beats, median };
+})();
+
+// vendor/memory.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const MEMORY = (() => {
+// memory.mjs: the estate's 12-chamber memory kernel, from estate-nest (kernel/fall-remember.mjs) at the commit in
+// vendor/PROVENANCE.json. Comments removed and one unused constant dropped by scripts/vendor-memory.mjs; the code is
+// unchanged, and CI derives this file again from the upstream bytes and compares.
+const DIM = 96;
+
+const DODECA = [
+  [1, 2, 3, 4, 5], [0, 2, 5, 6, 7], [0, 1, 3, 7, 8], [0, 2, 4, 8, 9],
+  [0, 3, 5, 9, 10], [0, 1, 4, 6, 10], [1, 5, 7, 10, 11], [1, 2, 6, 8, 11],
+  [2, 3, 7, 9, 11], [3, 4, 8, 10, 11], [4, 5, 6, 9, 11], [6, 7, 8, 9, 10],
+];
+
+function normalize(v) { let s = 0; for (const x of v) s += x * x; s = Math.sqrt(s) || 1; return v.map((x) => x / s); }
+function dot(a, b) { let s = 0; const n = Math.min(a.length, b.length); for (let i = 0; i < n; i++) s += a[i] * b[i]; return s; }
+function cosine(a, b) { return dot(a, b); }
+
+function rng(seed) {
+  return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+const AXES = (() => {
+  const r = rng(0x5EED12);
+  const axes = [];
+  for (let c = 0; c < 12; c++) {
+    const v = new Array(DIM);
+    for (let i = 0; i < DIM; i++) {
+      const u1 = Math.max(r(), 1e-12), u2 = r();
+      v[i] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+    axes.push(normalize(v));
+  }
+  return axes;
+})();
+
+function embed(text, dim = DIM) {
+  const v = new Array(dim).fill(0);
+  const s = ' ' + String(text).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+  for (let n = 3; n <= 4; n++) for (let i = 0; i + n <= s.length; i++) {
+    const g = s.slice(i, i + n);
+    let h = 2166136261; for (let j = 0; j < g.length; j++) { h ^= g.charCodeAt(j); h = Math.imul(h, 16777619); }
+    v[(h >>> 0) % dim] += ((h >>> 7) & 1) ? 1 : -1;
+  }
+  return normalize(v);
+}
+
+function chamber(vec) {
+  let best = 0, bd = -Infinity;
+  for (let c = 0; c < 12; c++) { const d = dot(vec, AXES[c]); if (d > bd) { bd = d; best = c; } }
+  return best;
+}
+
+function address(s) {
+  s = String(s); let out = '';
+  for (const seed of [0x811c9dc5, 0x9e3779b9, 0x85ebca6b, 0xc2b2ae35]) {
+    let h = seed;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+    out += (h >>> 0).toString(16).padStart(8, '0');
+  }
+  return out;
+}
+
+function goldenPos(i) { const th = i * 2.399963229728653; const r = Math.sqrt(i + 1); return [r * Math.cos(th), r * Math.sin(th)]; }
+
+class FallRemember {
+  constructor() { this.chambers = Array.from({ length: 12 }, () => []); this.size = 0; }
+
+  store(mem) {
+    const vector = mem && mem.vector ? normalize(mem.vector.slice()) : embed(mem && mem.text || '');
+    if (!vector.some((x) => x !== 0) || vector.some((x) => !Number.isFinite(x))) return null;
+    const c = chamber(vector);
+    const name = (mem && mem.id) || address((mem && mem.text || '') + '|' + JSON.stringify(mem && mem.vector || null));
+    const rec = { name, text: mem && mem.text, vector, sig: mem && mem.sig, meta: (mem && mem.meta) || {}, chamber: c };
+    this.chambers[c].push(rec);
+    this.size++;
+    return rec;
+  }
+
+  _verify(rec, validate) {
+    if (!rec || !rec.vector || rec.vector.some((x) => !Number.isFinite(x))) return false;
+    if (rec.sig && validate) { try { const r = validate(rec.sig); return !!r && r.valid === true; } catch { return false; } }
+    return true;
+  }
+
+  retrieve(query, { k = 8, validate = null, exact = true, probes = 1 } = {}) {
+    const qv = Array.isArray(query) ? normalize(query.slice()) : embed(query);
+    let region;
+    if (exact) region = Array.from({ length: 12 }, (_, i) => i);
+    else {
+      const top = AXES.map((ax, c) => [c, dot(qv, ax)]).sort((a, b) => b[1] - a[1]).slice(0, Math.max(1, probes)).map((x) => x[0]);
+      const set = new Set();
+      for (const c of top) { set.add(c); for (const nb of DODECA[c]) set.add(nb); }
+      region = [...set];
+    }
+    const cand = [];
+    for (const c of region) for (const rec of this.chambers[c]) if (this._verify(rec, validate)) cand.push(rec);
+    cand.sort((a, b) => dot(qv, b.vector) - dot(qv, a.vector));
+    if (!cand.length) return { center: null, corners: [], chambersSearched: region.length };
+    return { center: cand[0], corners: cand.slice(1, 1 + k), chambersSearched: region.length, score: dot(qv, cand[0].vector) };
+  }
+
+  traverse(start, hops = 1) {
+    let frontier = new Set([start]); const seen = new Set([start]);
+    for (let h = 0; h < hops; h++) { const next = new Set(); for (const c of frontier) for (const nb of DODECA[c]) if (!seen.has(nb)) { seen.add(nb); next.add(nb); } frontier = next; }
+    return [...seen];
+  }
+
+  distribution() { return this.chambers.map((c) => c.length); }
+  toJSON() { return { v: 1, size: this.size, chambers: this.chambers }; }
+  static fromJSON(o) { const s = new FallRemember(); if (o && Array.isArray(o.chambers)) { s.chambers = o.chambers; s.size = o.size ?? o.chambers.flat().length; } return s; }
+}
+return { DIM, DODECA, cosine, AXES, embed, chamber, address, goldenPos, FallRemember };
+})();
+
+// src/exact.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const EXACT = (() => {
+// exact.mjs — exact arithmetic: the ground the checker stands on. Every number is a fraction of two whole numbers
+// (BigInt), so nothing is rounded and "equal" means equal. A line of working is read as an expression and worked out
+// here, by code, never by a model. Pure and total: text that is not arithmetic gives null, and nothing throws.
+//
+//   evaluate('0.5 × 14 × 23²')  →  { value: 3703/1, canon: '*(0.5,14,^(23,2))', ops: 3, shown: '0.5 × 14 × 23^2' }
+//
+// What it reads: whole numbers and decimals (thousands commas allowed), + - × ÷ ^, brackets, a leading minus, the
+// signs people and models write for those (x * · ÷ / − ² ³ ½ ¼ ¾), and a unit after a number, which is dropped.
+// What it refuses: letters, implied multiplication such as 2(3), unbalanced brackets, division by zero, numbers
+// past a size limit. Refusing is safe: a line this cannot read is simply not a claim, so it is never kept or dropped.
+
+const LIMIT = 10n ** 60n;          // no fraction may have a part longer than this
+const MAX_EXPONENT = 64n, MAX_TOKENS = 200, MAX_DEPTH = 24, MAX_DIGITS = 40;
+const abs = (a) => (a < 0n ? -a : a);
+const gcd = (a, b) => { a = abs(a); b = abs(b); while (b !== 0n) { const t = a % b; a = b; b = t; } return a; };
+
+// make(n, d) → the fraction n/d in lowest terms with d above zero, or null (d is zero, or a part is past the limit)
+function make(n, d = 1n) {
+  if (typeof n !== 'bigint' || typeof d !== 'bigint' || d === 0n) return null;
+  const g = gcd(n, d), sign = d < 0n ? -1n : 1n;
+  const num = (sign * n) / g, den = (sign * d) / g;
+  return abs(num) > LIMIT || den > LIMIT ? null : { n: num, d: den };
+}
+const ok = (f) => f !== null && typeof f === 'object' && typeof f.n === 'bigint' && typeof f.d === 'bigint';
+const add = (a, b) => (ok(a) && ok(b) ? make(a.n * b.d + b.n * a.d, a.d * b.d) : null);
+const sub = (a, b) => (ok(a) && ok(b) ? make(a.n * b.d - b.n * a.d, a.d * b.d) : null);
+const mul = (a, b) => (ok(a) && ok(b) ? make(a.n * b.n, a.d * b.d) : null);
+const div = (a, b) => (ok(a) && ok(b) ? make(a.n * b.d, a.d * b.n) : null);
+// pow(a, e) → a to a whole-number power e (negative allowed when a is not zero); null past the exponent limit
+function pow(a, e) {
+  if (!ok(a) || !ok(e) || e.d !== 1n || abs(e.n) > MAX_EXPONENT) return null;
+  let out = make(1n), base = e.n < 0n ? make(a.d, a.n) : a;
+  for (let i = 0n; i < abs(e.n) && out !== null; i++) out = mul(out, base);
+  return out;
+}
+// same(a, b) → true when both are fractions and they are the same number
+const same = (a, b) => ok(a) && ok(b) && a.n === b.n && a.d === b.d;
+
+// num(text) → a plain number as a fraction, or null: 3703, 1,776, 0.5, .5, -12
+function num(text) {
+  const s = typeof text === 'string' ? text.trim() : '';
+  const m = s.match(/^([+-]?)(\d{1,3}(?:,\d{3})+|\d+)?(?:\.(\d+))?$/);
+  if (!m || (m[2] === undefined && m[3] === undefined)) return null;
+  const whole = (m[2] || '0').split(',').join(''), part = m[3] || '';
+  if (whole.length + part.length > MAX_DIGITS) return null;
+  const f = make(BigInt(whole + part), 10n ** BigInt(part.length));
+  return f === null ? null : (m[1] === '-' ? make(-f.n, f.d) : f);
+}
+// show(f) → the fraction as people write it: 3703, 0.5 or, when it does not end as a decimal, 1/3
+function show(f) {
+  if (!ok(f)) return '';
+  if (f.d === 1n) return String(f.n);
+  let d = f.d, places = 0;
+  while (d % 10n === 0n) { d /= 10n; places++; }
+  let twos = 0, fives = 0;
+  while (d % 2n === 0n) { d /= 2n; twos++; }
+  while (d % 5n === 0n) { d /= 5n; fives++; }
+  if (d !== 1n) return `${f.n}/${f.d}`;
+  places += Math.max(twos, fives);
+  const scaled = (abs(f.n) * 10n ** BigInt(places)) / f.d, digits = String(scaled).padStart(places + 1, '0');
+  return `${f.n < 0n ? '-' : ''}${digits.slice(0, digits.length - places)}.${digits.slice(digits.length - places)}`;
+}
+
+// a unit written after a number is dropped (the number is what is being claimed)
+const UNITS = /(\d|\))\s*(?:kg\s*[·*.]?\s*m\/s|m\/s\s*\^\s*2|m\/s²|m\/s|kg|joules?|newtons?|met(?:re|er)s?|seconds?|watts?|volts?|amps?|amperes?|ohms?|pascals?|J|N|W|V|A|Ω|Pa|m|s)(?![A-Za-z0-9^²])/g;
+// tokens(text) → the expression as a list of tokens, or null when anything in it is not arithmetic
+function tokens(text) {
+  if (typeof text !== 'string' || text.length > 400) return null;
+  let s = text.replace(/[×·⋅∙]/g, '*').replace(/÷/g, '/').replace(/[−–—]/g, '-').replace(/²/g, '^2').replace(/³/g, '^3')
+    .replace(/½/g, '(1/2)').replace(/¼/g, '(1/4)').replace(/¾/g, '(3/4)');
+  s = s.replace(UNITS, '$1').replace(UNITS, '$1');
+  s = s.replace(/([\d)])\s*[xX]\s*(?=[\d(.-])/g, '$1*');
+  const out = [], re = /\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+|[-+*/^()])/y;
+  let at = 0;
+  while (at < s.length) {
+    re.lastIndex = at;
+    const m = re.exec(s);
+    if (!m) return /^\s*$/.test(s.slice(at)) ? out : null;
+    out.push(m[1]); at = re.lastIndex;
+    if (out.length > MAX_TOKENS) return null;
+  }
+  return out;
+}
+
+const OPS = { '+': add, '-': sub, '*': mul, '/': div, '^': pow };
+const node = (op, args, value) => (value === null ? null : { op, args, value });
+// a recursive-descent reader over the tokens: sums of products of powers, with brackets and a leading minus
+function read(toks) {
+  let i = 0, depth = 0;
+  const peek = () => toks[i];
+  function atom() {
+    const t = toks[i];
+    if (t === '(') {
+      if (++depth > MAX_DEPTH) return null;
+      i++;
+      const e = sum();
+      if (e === null || toks[i] !== ')') return null;
+      i++; depth--;
+      return e;
+    }
+    const v = t === undefined ? null : num(t);
+    if (v === null) return null;
+    i++;
+    return { op: 'n', args: [], value: v };
+  }
+  function unary() {
+    if (peek() === '-') { i++; const u = unary(); return u === null ? null : node('neg', [u], sub(make(0n), u.value)); }
+    return power();
+  }
+  function power() {
+    const base = atom();
+    if (base === null || peek() !== '^') return base;
+    i++;
+    const e = unary();
+    return e === null ? null : node('^', [base, e], pow(base.value, e.value));
+  }
+  function chain(next, ops) {
+    let left = next();
+    while (left !== null && ops.includes(peek())) {
+      const op = toks[i++], right = next();
+      left = right === null ? null : node(op, [left, right], OPS[op](left.value, right.value));
+    }
+    return left;
+  }
+  const product = () => chain(unary, ['*', '/']);
+  const sum = () => chain(product, ['+', '-']);
+  const tree = sum();
+  return tree !== null && i === toks.length ? tree : null;
+}
+// canon(tree) → one spelling for every way of writing the same working: 14 × 23 and 23 × 14 are the same key
+function canon(t) {
+  if (t.op === 'n') return show(t.value);
+  if (t.op === '+' || t.op === '*') {
+    const flat = (x) => (x.op === t.op ? x.args.flatMap(flat) : [canon(x)]);
+    return `${t.op}(${flat(t).sort().join(',')})`;
+  }
+  return `${t.op}(${t.args.map(canon).join(',')})`;
+}
+// a minus in front of a plain number makes a negative number, not a step of working
+const count = (t) => (t.op === 'n' || (t.op === 'neg' && t.args[0].op === 'n') ? 0 : 1 + t.args.reduce((a, x) => a + count(x), 0));
+
+// evaluate(text) → { value, canon, ops, shown, tree } for a piece of arithmetic, or null when it is not one. ops
+// counts the operations in it, so a bare number has ops 0. shown is the working written one plain way (units and
+// commas gone). tree is its shape: { op, args, value } with op 'n' for a number.
+function evaluate(text) {
+  const toks = tokens(text);
+  if (toks === null || toks.length === 0) return null;
+  const tree = read(toks);
+  if (tree === null) return null;
+  const SIGN = { '*': ' × ', '/': ' ÷ ', '+': ' + ', '-': ' - ' };
+  const shown = toks.map((t, k) => (t === '-' && (k === 0 || '(+-*/^'.includes(toks[k - 1])) ? '-' : SIGN[t] || ('()^'.includes(t) ? t : show(num(t))))).join('');
+  return { value: tree.value, canon: canon(tree), ops: count(tree), shown, tree };
+}
+return { make, add, sub, mul, div, pow, same, num, show, tokens, evaluate };
+})();
+
+// src/checker.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const CHECK = (() => {
+// checker.mjs — the ruling. It is code, never a model, and it is the only thing that can say a step is right or that
+// a task is finished. It reads a reply line by line. A line such as "14 × 529 = 7406" is a claim: the left side is
+// worked out exactly (exact.mjs) and the claim is KEPT if the two sides are the same number and DROPPED if they are
+// not. It never says what the right number would have been. The final answer is ruled the same way against the task.
+// Pure and total. A line it cannot read as arithmetic is not a claim: it is neither kept nor dropped.
+const { evaluate, num, same, show, make, mul, add, pow } = EXACT;
+
+const str = (x) => (typeof x === 'string' ? x : '');
+const get = (o, k) => { try { return o[k]; } catch { return undefined; } };
+// a bullet or a step label in front of the working is not part of it
+const LABEL = /^\s*(?:[-*•]\s+|\(?\d{1,2}[.)]\s+|step\s*\d+\s*[:.)-]\s*)/i;
+// what follows the word may open with a colon, an equals sign or markup, never with a minus: that belongs to the number
+const ANSWER = /^\W*(?:final\s+)?answer\b[\s:=*]*(.*)$/i;
+// side(text) → one side of an equals sign as arithmetic, or null. Words in front of the working are let go only when
+// they stand apart from it ("So 23 × 23", "Energy: 0.5 × 14"); a name glued to a number ("v2") is not arithmetic.
+function side(text) {
+  const t = str(text).replace(/[.;,]\s*$/, '').trim();
+  const whole = evaluate(t);
+  if (whole !== null) return whole;
+  const afterColon = t.includes(':') ? evaluate(t.slice(t.lastIndexOf(':') + 1)) : null;
+  if (afterColon !== null) return afterColon;
+  const words = t.split(/\s+/);
+  let i = 0;
+  while (i < words.length && /^[A-Za-z]+$/.test(words[i])) i++;
+  return i > 0 ? evaluate(words.slice(i).join(' ')) : null;
+}
+
+// claimsOf(text) → every claim in a reply: [{ line, left, right, ok, canon, fact }]. A claim is two readable sides of
+// an equals sign with at least one operation between them. fact is "working = number" when one side is a plain number.
+function claimsOf(text) {
+  const out = [];
+  let above = null;
+  for (const [n, raw] of str(text).split('\n').entries()) {
+    if (ANSWER.test(raw) || /[≈≠<>]/.test(raw)) { above = null; continue; }
+    if (!raw.includes('=')) {
+      // working rewritten on the next line with no equals sign: when the two lines come to the same number, the
+      // second is a claim about the first. When they do not, nothing was claimed, so nothing is dropped.
+      const here = side(raw.replace(LABEL, ''));
+      // (two bare numbers that agree are the same number written twice: one spelling, so no claim)
+      if (above !== null && here !== null && above.canon !== here.canon && same(above.value, here.value)) {
+        const work = above.ops > 0 ? above : here, plain = above.ops > 0 ? here : above;
+        out.push({ line: n, left: above.shown, right: here.shown, ok: true, canon: work.canon, fact: plain.ops === 0 ? `${work.shown} = ${show(plain.value)}` : null });
+      }
+      above = here;
+      continue;
+    }
+    above = null;
+    // each side with the side after it: a chain of equals signs is one claim per neighbouring pair
+    const sides = raw.replace(LABEL, '').split('=').map(side);
+    sides.slice(1).forEach((R, i) => {
+      const L = sides[i];
+      if (L === null || R === null || L.ops + R.ops === 0) return;
+      const okay = same(L.value, R.value);
+      // the working is the side with operations in it; the other side is its value
+      const work = L.ops > 0 ? L : R, plain = L.ops > 0 ? R : L;
+      out.push({ line: n, left: L.shown, right: R.shown, ok: okay, canon: work.canon, fact: okay && plain.ops === 0 ? `${work.shown} = ${show(plain.value)}` : null });
+    });
+  }
+  return out;
+}
+
+// answerOf(text) → what the reply gives as its answer: { text, numbers }, from its last "ANSWER:" line, or null
+function answerOf(text) {
+  const lines = str(text).split('\n').map((l) => l.match(ANSWER)).filter(Boolean);
+  if (lines.length === 0) return null;
+  const rest = lines[lines.length - 1][1].replace(/^[:=\s]+/, '').replace(/[.;,\s]+$/, '');
+  const last = rest.includes('=') ? rest.slice(rest.lastIndexOf('=') + 1) : rest;
+  const one = side(last);
+  const numbers = (rest.match(/-?\d[\d,]*(?:\.\d+)?/g) || []).map((x) => num(x.replace(/,(?!\d{3})/g, ''))).filter(Boolean);
+  return { text: rest, value: one !== null && one.ops === 0 ? one.value : null, numbers };
+}
+
+const int = (s) => { try { return /^-?\d+$/.test(str(s)) ? BigInt(s) : null; } catch { return null; } };
+// home(task, answer) → true when the answer is right for the task. Three kinds of finish line, none of them a model:
+//   value    the answer is exactly the task's number
+//   factors  the answer gives two whole numbers above 1 whose product is the task's number (no stored answer needed)
+//   root     the answer x satisfies x³ + b·x = n, worked out here
+function home(task, answer) {
+  const c = get(task, 'check') || {}, a = answer || {};
+  if (c.type === 'value') return same(get(a, 'value') || null, num(str(c.value)));
+  if (c.type === 'factors') {
+    const n = int(c.n), ns = (Array.isArray(a.numbers) ? a.numbers : []).filter((f) => f.d === 1n && f.n > 1n);
+    return n !== null && ns.length === 2 && ns[0].n * ns[1].n === n;
+  }
+  if (c.type === 'root') {
+    // a number that is missing makes the sum below come to nothing, and nothing is never the same as a number
+    return same(add(pow(get(a, 'value') || null, make(3n)), mul(make(int(c.b)), get(a, 'value') || null)), make(int(c.n)));
+  }
+  return false;
+}
+
+// rule(text, task) → the ruling on one reply: which claims are kept, which are dropped, the facts worth remembering,
+// the answer it gave, and whether the task is finished
+function rule(text, task) {
+  const claims = claimsOf(text), seen = new Set(), kept = [], dropped = [];
+  for (const c of claims) {
+    const key = `${c.ok}|${c.canon}|${c.right}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    (c.ok ? kept : dropped).push(c);
+  }
+  const answer = answerOf(text);
+  return {
+    kept: kept.map((c) => ({ text: `${c.left} = ${c.right}`, canon: c.canon, fact: c.fact })),
+    dropped: dropped.map((c) => ({ text: `${c.left} = ${c.right}`, canon: c.canon })),
+    answer: answer === null ? null : answer.text, home: answer !== null && home(task, answer),
+  };
+}
+return { claimsOf, answerOf, home, rule };
+})();
+
+// src/plan.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const PLAN = (() => {
+// plan.mjs — how to make a step smaller. When the checker drops a step, the model is not told the right value.
+// The step is split into smaller ones, and this file makes the split, by code, from the step's own numbers:
+// 144 × 45 becomes 144 × 40 + 144 × 5. If a smaller step is dropped too, it is split again, so each pass goes one
+// level finer until the steps are ones a small model gets right, or until there is nothing smaller to offer.
+// A split never contains a result: both sides are working, and they are equal by construction (the tests check each
+// one with the exact arithmetic). Pure and total.
+const { evaluate, show, same, make } = EXACT;
+
+// a number as written, with no sign in front: every split here is for numbers above nothing
+const isNum = (t) => t.op === 'n';
+const whole = (t) => isNum(t) && t.value.d === 1n && t.value.n > 0n;
+// places(n) → a whole number as its place-value parts: 345 → [300, 40, 5]
+function places(n) {
+  const s = String(n), out = [];
+  for (let i = 0; i < s.length; i++) if (s[i] !== '0') out.push(BigInt(s[i]) * 10n ** BigInt(s.length - 1 - i));
+  return out;
+}
+
+// ways(working) → every way this file knows to write a one-operation step as smaller steps, gentlest first. Each is
+// the smaller working only, as text. [] when the step has more than one operation or there is nothing smaller.
+function ways(working) {
+  const e = evaluate(working);
+  if (e === null || e.ops !== 1 || e.tree.op === 'neg') return [];
+  const t = e.tree, [a, b] = t.args;
+  if (t.op === '^') {
+    if (!whole(a) || !whole(b) || b.value.n < 2n || b.value.n > 4n) return [];
+    return [Array.from({ length: Number(b.value.n) }, () => show(a.value)).join(' × ')];
+  }
+  if (t.op === '*') {
+    // half of a whole number is a division by two
+    const half = [a, b].findIndex((x) => isNum(x) && x.value.n === 1n && x.value.d === 2n);
+    if (half >= 0) return whole([a, b][1 - half]) ? [`${show([a, b][1 - half].value)} ÷ 2`] : [];
+    // a number with a decimal part, times a whole number: its whole part and its decimal part, each times that number
+    const mixed = [a, b].findIndex((x) => isNum(x) && x.value.d !== 1n && x.value.n > x.value.d);
+    if (mixed >= 0) {
+      const f = [a, b][mixed].value, other = [a, b][1 - mixed], part = show(make(f.n % f.d, f.d));
+      return whole(other) && !part.includes('/') ? [`${f.n / f.d} × ${show(other.value)} + ${part} × ${show(other.value)}`] : [];
+    }
+    if (!whole(a) || !whole(b)) return [];
+    const pa = places(a.value.n), pb = places(b.value.n);
+    if (pa.length === 1 && pb.length === 1) {
+      // one digit each, with noughts: 40 × 300 is 4 × 3 with three noughts put back
+      const da = BigInt(String(pa[0])[0]), db = BigInt(String(pb[0])[0]), tens = (pa[0] / da) * (pb[0] / db);
+      return tens === 1n ? [] : [`${da} × ${db} × ${tens}`];
+    }
+    const byB = pb.length > 1 ? pb.map((y) => `${show(a.value)} × ${y}`).join(' + ') : null;
+    const byA = pa.length > 1 ? pa.map((x) => `${x} × ${show(b.value)}`).join(' + ') : null;
+    const grid = pa.length > 1 && pb.length > 1 ? pa.flatMap((x) => pb.map((y) => `${x} × ${y}`)).join(' + ') : null;
+    // the gentlest split takes apart the number with fewer parts; the finest takes apart both
+    return [...(byB !== null && (byA === null || pb.length <= pa.length) ? [byB, byA] : [byA, byB]), grid].filter((x) => x !== null);
+  }
+  if (t.op === '+' || t.op === '-') {
+    if (!whole(a) || !whole(b)) return [];
+    const pb = places(b.value.n), sign = t.op;
+    // take the second number one place at a time
+    if (pb.length > 1) return [`${show(a.value)} ${sign} ${pb.join(` ${sign} `)}`];
+    // one place to add, and the first number has a digit in that place: add the two digits on their own, so the
+    // carry is a step of its own. 8400 + 200 is 8000 + (4 + 2) × 100; 274 + 8 is 270 + (4 + 8).
+    const unit = 10n ** BigInt(String(pb[0]).length - 1), da = (a.value.n / unit) % 10n, rest = a.value.n - da * unit;
+    if (sign !== '+' || da === 0n || (rest === 0n && unit === 1n)) return [];
+    const digits = `(${da} + ${pb[0] / unit})${unit === 1n ? '' : ` × ${unit}`}`;
+    return [rest === 0n ? digits : `${rest} + ${digits}`];
+  }
+  if (!whole(a) || !whole(b)) return [];
+  // a division, when every place of the first number divides exactly
+  const pa = places(a.value.n);
+  return pa.length < 2 || pa.some((p) => p % b.value.n !== 0n) ? [] : [pa.map((p) => `${p} ÷ ${show(b.value)}`).join(' + ')];
+}
+// split(working) → one line "working = smaller working", the gentlest split, or null
+function split(working) {
+  const w = ways(working);
+  return w.length === 0 ? null : `${evaluate(working).shown} = ${w[0]}`;
+}
+// holds(line) → true when a split line says nothing false: it has two sides and they are the same number
+function holds(line) {
+  const sides = String(line).split(' = ').map((s) => evaluate(s));
+  return sides.length === 2 && sides.every((s) => s !== null) && same(sides[0].value, sides[1].value);
+}
+return { places, ways, split, holds };
+})();
+
+// src/left.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const LEFT = (() => {
+// left.mjs — what is left to do. The checker holds the calculation a problem asks for and, as the model writes
+// steps, crosses off each part the model got right. What remains is a smaller problem, and that is what the model is
+// shown next. Nothing here works a step out for the model: a part is crossed off only with a value the model wrote
+// in a line the checker found true, or with a fact an earlier problem's checked line put in the memory.
+//
+//   start('15 × 15 × 37')                         →  15 × 15 × 37
+//   a true line   15 × 15 = 225                   →  225 × 37
+//   a false line  225 × 37 = 8355  is split       →  225 × 30 + 225 × 7
+//   a true line   225 × 30 = 6750                 →  6750 + 225 × 7
+//
+// The one law of this file: whatever is done to it, what is left always has the same exact value as the calculation
+// it started from. Every change is checked against that before it is accepted. Pure and total.
+const { evaluate, show, same, make, add, sub, mul } = EXACT;
+const { ways } = PLAN;
+
+const ZERO = make(0n), ONE = make(1n);
+const num = (value) => ({ op: 'n', value });
+const isN = (x) => x.op === 'n';
+
+// A calculation is held as: a number; a product of items; a sum of signed terms; or a division or power of two parts.
+// A sum written in brackets after a plus sign (270 + (4 + 8)) is HELD: it stays a bracket, to be done first.
+function product(items) {
+  const flat = items.flatMap((x) => (x.op === '*' ? x.items : [x]));
+  return flat.length === 1 ? flat[0] : { op: '*', items: flat, value: flat.reduce((a, x) => mul(a, x.value), ONE) };
+}
+function total(terms) {
+  // a sum added inside a sum is opened up unless it is held, and adding a negative number is written as taking the number away
+  const flat = terms.flatMap((t) => (t.node.op === '+' && !t.neg && t.node.held !== true ? t.node.terms : [t])).map((t) => (isN(t.node) && t.node.value !== null && t.node.value.n < 0n ? { neg: !t.neg, node: num(sub(ZERO, t.node.value)) } : t));
+  if (flat.length === 1 && !flat[0].neg) return flat[0].node;
+  if (flat.length === 1 && isN(flat[0].node)) return num(sub(ZERO, flat[0].node.value));
+  return { op: '+', terms: flat, value: flat.reduce((a, t) => (t.neg ? sub(a, t.node.value) : add(a, t.node.value)), ZERO) };
+}
+const hold = (x) => (x.op === '+' ? { ...x, held: true } : x);
+function norm(t) {
+  if (t.op === 'n') return num(t.value);
+  if (t.op === 'neg') return total([{ neg: true, node: norm(t.args[0]) }]);
+  if (t.op === '*') return product(t.args.map(norm));
+  if (t.op === '+') return total([{ neg: false, node: norm(t.args[0]) }, { neg: false, node: hold(norm(t.args[1])) }]);
+  if (t.op === '-') return total([{ neg: false, node: norm(t.args[0]) }, { neg: true, node: norm(t.args[1]) }]);
+  return { op: t.op, args: t.args.map(norm), value: t.value };
+}
+const read = (text) => { const e = evaluate(text); return e === null ? null : norm(e.tree); };
+// sound(x) → true when x is a calculation as this file holds one; anything else handed in is refused, not read
+const frac = (v) => v !== null && typeof v === 'object' && typeof v.n === 'bigint' && typeof v.d === 'bigint';
+function sound(x) {
+  if (x === null || typeof x !== 'object' || !frac(x.value)) return false;
+  if (x.op === 'n') return true;
+  if (x.op === '*') return Array.isArray(x.items) && x.items.length > 1 && x.items.every(sound);
+  if (x.op === '+') return Array.isArray(x.terms) && x.terms.length > 0 && x.terms.every((t) => t !== null && typeof t === 'object' && typeof t.neg === 'boolean' && sound(t.node));
+  return (x.op === '/' || x.op === '^') && Array.isArray(x.args) && x.args.length === 2 && x.args.every(sound);
+}
+
+// spell(x) → one spelling for every way of writing the same calculation, whatever the order of a product or a sum
+function spell(x) {
+  if (isN(x)) return show(x.value);
+  if (x.op === '*') return `*(${x.items.map(spell).sort().join(',')})`;
+  if (x.op === '+') return `+(${x.terms.map(sign).sort().join(',')})`;
+  return `${x.op}(${x.args.map(spell).join(',')})`;
+}
+const sign = (t) => (t.neg ? '-' : '') + spell(t.node);
+
+// write(x) → the calculation as a person writes it
+function write(x) {
+  if (isN(x)) return show(x.value);
+  if (x.op === '*') return x.items.map((i) => (i.op === '+' || i.op === '/' ? `(${write(i)})` : write(i))).join(' × ');
+  if (x.op === '+') {
+    // written with a term that is added first, when there is one that is not a bracket
+    const lead = x.terms.findIndex((t) => !t.neg && t.node.op !== '+'), order = lead > 0 ? [x.terms[lead], ...x.terms.filter((_, i) => i !== lead)] : x.terms;
+    return order.map((t, k) => { const s = isN(t.node) || (t.node.op !== '+' && !(k === 0 && t.neg)) ? write(t.node) : `(${write(t.node)})`; return k === 0 ? `${t.neg ? '-' : ''}${s}` : `${t.neg ? ' - ' : ' + '}${s}`; }).join('');
+  }
+  const [a, b] = x.args, plain = (n) => isN(n) && n.value.n >= 0n;
+  if (x.op === '/') return `${plain(a) || a.op === '*' || a.op === '/' || a.op === '^' ? write(a) : `(${write(a)})`} ÷ ${plain(b) ? write(b) : `(${write(b)})`}`;
+  return `${plain(a) ? write(a) : `(${write(a)})`}^${plain(b) ? write(b) : `(${write(b)})`}`;
+}
+// size(x) → how many operations are left in it; 0 means it is a number and there is nothing left to do
+function size(x) {
+  if (isN(x)) return 0;
+  if (x.op === '*') return x.items.length - 1 + x.items.reduce((a, i) => a + size(i), 0);
+  if (x.op === '+') return x.terms.length - 1 + x.terms.reduce((a, t) => a + size(t.node), 0);
+  return 1 + size(x.args[0]) + size(x.args[1]);
+}
+// start(text) → the calculation a problem asks for, ready to be crossed off, or null when the text is not one
+function start(text) { return read(typeof text === 'string' ? text : ''); }
+
+// pick(have, need) → the positions in have that make up need, each used once, or null
+function pick(have, need) {
+  const used = [];
+  for (const k of need) { const i = have.findIndex((h, j) => h === k && !used.includes(j)); if (i < 0) return null; used.push(i); }
+  return used;
+}
+// again(node, terms) → the sum with new terms; a held bracket stays held for as long as it is still a sum
+const again = (node, terms) => { const made = total(terms); return node.held === true ? hold(made) : made; };
+const put = (list, at, item) => { const first = Math.min(...at); return list.flatMap((x, i) => (i === first ? [item] : at.includes(i) ? [] : [x])); };
+// swap(node, w, wk, fresh) → node with the first part that is the working w replaced by fresh, or null when w is
+// not in it. A working is in a product when its items are some of the product's, and in a sum when its terms are
+// some of the sum's, as written or all with the other sign (b + c is in a - b - c, as what is taken away).
+function swap(node, w, wk, fresh) {
+  if (isN(node)) return null;
+  if (spell(node) === wk) return fresh;
+  if (node.op === '*') {
+    const at = w.op === '*' ? pick(node.items.map(spell), w.items.map(spell)) : null;
+    if (at !== null) return product(put(node.items, at, fresh));
+    for (let i = 0; i < node.items.length; i++) { const r = swap(node.items[i], w, wk, fresh); if (r !== null) return product(node.items.map((x, k) => (k === i ? r : x))); }
+    return null;
+  }
+  if (node.op === '+') {
+    const have = node.terms.map(sign), as = w.op === '+' ? pick(have, w.terms.map(sign)) : null;
+    if (as !== null) return again(node, put(node.terms, as, { neg: false, node: fresh }));
+    const other = w.op === '+' ? pick(have, w.terms.map((t) => sign({ neg: !t.neg, node: t.node }))) : null;
+    if (other !== null) return again(node, put(node.terms, other, { neg: true, node: fresh }));
+    for (let i = 0; i < node.terms.length; i++) { const r = swap(node.terms[i].node, w, wk, fresh); if (r !== null) return again(node, node.terms.map((t, k) => (k === i ? { neg: t.neg, node: r } : t))); }
+    return null;
+  }
+  for (let i = 0; i < 2; i++) { const r = swap(node.args[i], w, wk, fresh); if (r !== null) return { op: node.op, args: node.args.map((x, k) => (k === i ? r : x)), value: node.value }; }
+  return null;
+}
+// byValue(node, value) → node with its first (outermost) unfinished part of exactly that value replaced by the value
+function byValue(node, value) {
+  if (isN(node)) return null;
+  if (same(node.value, value)) return num(value);
+  if (node.op === '*') { for (let i = 0; i < node.items.length; i++) { const r = byValue(node.items[i], value); if (r !== null) return product(node.items.map((x, k) => (k === i ? r : x))); } return null; }
+  if (node.op === '+') { for (let i = 0; i < node.terms.length; i++) { const r = byValue(node.terms[i].node, value); if (r !== null) return again(node, node.terms.map((t, k) => (k === i ? { neg: t.neg, node: r } : t))); } return null; }
+  for (let i = 0; i < 2; i++) { const r = byValue(node.args[i], value); if (r !== null) return { op: node.op, args: node.args.map((x, k) => (k === i ? r : x)), value: node.value }; }
+  return null;
+}
+// the law: a change is accepted only when what is left still has the value it had
+const lawful = (before, after) => (after !== null && same(before.value, after.value) ? after : null);
+
+// steps(x) → every single step that could be done next: one operation on two plain numbers that sit together in a
+// product, a sum, a division or a power. [{ text, canon }], each once.
+function steps(x) {
+  const out = new Map();
+  const say = (text) => { const e = evaluate(text); if (e !== null && e.ops === 1 && !out.has(e.canon)) out.set(e.canon, { text: e.shown, canon: e.canon }); };
+  const walk = (n) => {
+    if (isN(n)) return;
+    if (n.op === '*') {
+      const ns = n.items.filter(isN);
+      ns.forEach((p, i) => ns.slice(i + 1).forEach((q) => say(`${show(p.value)} × ${show(q.value)}`)));
+      n.items.forEach(walk);
+    } else if (n.op === '+') {
+      const ns = n.terms.filter((t) => isN(t.node));
+      ns.forEach((p, i) => ns.slice(i + 1).forEach((q) => {
+        const a = show(p.node.value), b = show(q.node.value);
+        say(p.neg === q.neg ? `${a} + ${b}` : p.neg ? `${b} - ${a}` : `${a} - ${b}`);
+      }));
+      n.terms.forEach((t) => walk(t.node));
+    } else {
+      if (n.args.every(isN)) say(`${show(n.args[0].value)} ${n.op === '/' ? '÷' : '^'} ${show(n.args[1].value)}`);
+      n.args.forEach(walk);
+    }
+  };
+  walk(x);
+  return [...out.values()];
+}
+// adopt(x, w, wk, fresh) → the model split a step its own way (wrote 225 × 30 where 225 × 37 is asked): when the
+// working w is part of a split this file knows for one of the next steps, that step is replaced by its split, with w
+// in it replaced by fresh. null when no split of any next step holds w.
+function adopt(x, w, wk, fresh) {
+  for (const a of steps(x)) for (const way of ways(a.text)) {
+    const smaller = read(way), inside = smaller === null ? null : swap(smaller, w, wk, fresh), whole = read(a.text);
+    const r = inside === null || whole === null ? null : swap(x, whole, spell(whole), inside);
+    if (r !== null) return r;
+  }
+  return null;
+}
+
+// cross(x, working, value) → what is left after a TRUE line "working = value": { left, how } or null when the line
+// crosses nothing off. how is 'step' (the working is a part of what is left), 'split' (it is a part of a split of a
+// next step) or 'value' (it is some other working that comes to exactly the value of an unfinished part).
+function cross(x, working, value) {
+  const e = evaluate(typeof working === 'string' ? working : '');
+  if (e === null || e.ops === 0 || !same(e.value, value) || !sound(x)) return null;
+  const w = norm(e.tree), wk = spell(w), fresh = num(value);
+  for (const [how, r] of [['step', () => swap(x, w, wk, fresh)], ['split', () => adopt(x, w, wk, fresh)], ['value', () => byValue(x, value)]]) {
+    let got = lawful(x, r());
+    if (got === null) continue;
+    // a step that is asked for more than once is crossed off everywhere it stands
+    for (let more = lawful(got, swap(got, w, wk, fresh)); more !== null; more = lawful(got, swap(got, w, wk, fresh))) got = more;
+    return { left: got, how };
+  }
+  return null;
+}
+// rewrite(x, from, to) → what is left after a TRUE line with working on both sides ("0.5 × 6 × 9 = 0.5 × 54"): the
+// first working, where it is a part of what is left, is replaced by the second. null when it is not, or they differ.
+function rewrite(x, from, to) {
+  const a = evaluate(typeof from === 'string' ? from : ''), b = evaluate(typeof to === 'string' ? to : '');
+  // (a bare number as the first side is never found: only working is a part of what is left)
+  if (a === null || b === null || !same(a.value, b.value) || !sound(x)) return null;
+  const w = norm(a.tree), got = lawful(x, swap(x, w, spell(w), norm(b.tree)));
+  return got === null ? null : { left: got, how: 'step' };
+}
+// wrong(x, working) → what is left after a FALSE line about this working: { left, on, split }. on says whether the
+// working is a part of what is left (as it stands, or as a part of a split of a next step, which is then adopted).
+// When it is, and it is one operation that can be made smaller, it is replaced by its gentlest split, and split is
+// that line ("225 × 37 = 225 × 30 + 225 × 7"). A wrong line about anything else changes nothing.
+function wrong(x, working) {
+  const e = evaluate(typeof working === 'string' ? working : '');
+  if (e === null || e.ops === 0 || !sound(x)) return null;
+  const w = norm(e.tree), wk = spell(w);
+  const at = swap(x, w, wk, w) !== null ? x : lawful(x, adopt(x, w, wk, w));
+  if (at === null) return { left: x, on: false, split: null };
+  const way = ways(e.shown)[0], smaller = way === undefined ? null : read(way), got = smaller === null ? null : lawful(at, swap(at, w, wk, smaller));
+  return got === null ? { left: at, on: true, split: null } : { left: got, on: true, split: `${e.shown} = ${way}` };
+}
+
+// what the rest of the code reads off a calculation; each refuses anything that is not one
+// left(x) → it as a person writes it · ops(x) → how many operations are left · key(x) → its one spelling ·
+// atoms(x) → every single step that could be done next
+const left = (x) => (sound(x) ? write(x) : '');
+const ops = (x) => (sound(x) ? size(x) : 0);
+const key = (x) => (sound(x) ? spell(x) : '');
+const atoms = (x) => (sound(x) ? steps(x) : []);
+return { start, cross, rewrite, wrong, left, ops, key, atoms };
+})();
+
+// src/keep.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const KEEP = (() => {
+// keep.mjs — what is kept. A step the checker found true ("19 × 19 = 361") is written here once, and a later problem
+// that has the same step to do is handed it. Two layers:
+//   the map    the estate's own 12-chamber memory kernel (vendor/memory.mjs). A fact is placed by its digits and
+//              words, so facts about the same numbers land in the same or a neighbouring chamber, and finding one
+//              means looking in a chamber and the five beside it, never scanning everything.
+//   the floor  an exact list by key, used for two things only: not storing a fact twice, and MEASURING the map
+//              (what was there to be found, against what the map handed back). The loop is served by the map.
+// Only checked facts ever enter. Nothing a model said goes in without the checker's ruling. Pure apart from the
+// memory object it is handed; deterministic.
+const { FallRemember } = MEMORY;
+
+const str = (x) => (typeof x === 'string' ? x : '');
+const DEFAULTS = { k: 8, probes: 1 };
+// the kernel places text by its letters and digits, and signs are neither: spell them so the working can be placed
+const spell = (text) => str(text).replace(/×/g, ' times ').replace(/÷/g, ' over ').replace(/\+/g, ' plus ').replace(/\^/g, ' to the ').replace(/=/g, ' equals ').replace(/(\d)\s+-\s+/g, '$1 minus ').replace(/\s+/g, ' ').trim();
+
+function create() { return { kernel: new FallRemember(), floor: new Map(), asked: [] }; }
+
+// fold(M, kept, from) → true when a kept line with a fact is new and was written in. kept: { canon, fact }
+function fold(M, kept, from) {
+  const canon = str(kept && kept.canon), fact = str(kept && kept.fact);
+  if (canon === '' || fact === '' || M.floor.has(canon)) return false;
+  const rec = { canon, fact, from: str(from) };
+  if (M.kernel.store({ id: canon, text: spell(fact), meta: rec }) === null) return false;
+  M.floor.set(canon, rec);
+  return true;
+}
+
+// near(M, text, opts) → what the map hands back for a text: the facts nearest it, from one chamber and its five
+// neighbours (probes 1; 12 probes looks in every chamber), most alike first
+function near(M, text, opts) {
+  const o = { ...DEFAULTS, ...(opts || {}) };
+  if (M.kernel.size === 0 || spell(text) === '') return [];
+  const got = M.kernel.retrieve(spell(text), { k: o.k - 1, exact: false, probes: o.probes });
+  return [got.center, ...got.corners].filter(Boolean).map((r) => r.meta);
+}
+
+// lookup(M, canon, text, opts) → the stored fact for one step a problem has to do, if the map finds it, or null.
+// Every ask is logged with whether the fact was there to be found (the floor knows) and whether the map found it.
+function lookup(M, canon, text, opts) {
+  const there = M.floor.has(canon), hit = near(M, text, opts).find((r) => r.canon === canon) || null;
+  M.asked.push({ wanted: there ? 1 : 0, found: hit ? 1 : 0 });
+  return hit === null ? null : hit.fact;
+}
+
+// stats(M) → what the memory holds and how well the map found what was there to be found
+function stats(M) {
+  const wanted = M.asked.reduce((a, x) => a + x.wanted, 0), found = M.asked.reduce((a, x) => a + x.found, 0);
+  return { facts: M.floor.size, chambers: M.kernel.distribution(), asks: M.asked.length, wanted, found, recall: wanted === 0 ? null : found / wanted };
+}
+return { DEFAULTS, spell, create, fold, near, lookup, stats };
+})();
+
+// src/loop.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const LOOP = (() => {
+// loop.mjs — the climb, and the two plainer loops it is measured against. One PASS is: the model writes working and
+// an answer; the checker (checker.mjs, code) rules on it. What happens between passes is the only difference:
+//
+//   climb   the checker's ruling goes back in: which steps are right, which are wrong (never with the right value),
+//           and what is LEFT TO DO. The checker holds the calculation the problem asks for (left.mjs), crosses off
+//           each part the model got right, and replaces a wrong step by a split into smaller steps (plan.mjs). So
+//           every pass starts from a smaller problem than the last. True steps are written to the memory, and a
+//           step a problem has to do that the memory already holds is crossed off before the model is asked. It
+//           stops when the answer is right, or when it has stalled (the same reply to the same ruling).
+//   retry   the model is told only that its answer is not right, and tries again. Same number of chances at the
+//           finish line as the climb, with no steps checked and no memory. Stops when the answer is right.
+//   naive   nobody checks anything. The model is asked to re-read its own working and correct it. This is plain
+//           recursion: a model reviewing its own output. It stops when its answer stops changing.
+//
+// One pass of retry is also the single-pass baseline: the model, cold, once.
+// A problem's passes are one growing conversation, so the browser can reuse what it already computed for the earlier
+// turns. The prompts and worked examples are fixed here; the examples are invented and come from no task set.
+const { rule, claimsOf } = CHECK;
+const { evaluate, num } = EXACT;
+const { split } = PLAN;
+// LEFT: the scope above, under the same name
+const MEM = KEEP;
+
+const get = (o, k) => { try { return o[k]; } catch { return undefined; } };
+const SETTINGS = { depth: 8, maxTokens: 128 };
+const SYSTEM = 'You work out calculations one small step at a time. Write each step on its own line as: working = number. Use only numbers and the signs + - × ÷. Do not write units. End with a line: ANSWER: number';
+const RETRY = 'That answer is not right. Try again, one small step per line, and end with ANSWER: number';
+const REVIEW = 'Check your working line by line, correct any mistake, and end with ANSWER: number';
+
+// whole(c) → the part of a reply that was finished: a reply cut off at the length limit loses its last line, which
+// may be half a number
+const whole = (c) => (get(c, 'cut') === true ? c.text.split('\n').slice(0, -1).join('\n') : c.text);
+
+// judge(text, task, x) → the checker's whole reading of one reply. On top of the ruling (kept, dropped, answer,
+// home) it gives: used, the true lines that crossed a part of the calculation off; left, what is left of the
+// calculation x afterwards (null for a problem that carries none); and splits, for such a problem only, a smaller-
+// step line for each of its first three wrong steps that has one.
+function judge(text, task, x) {
+  const r = rule(text, task), used = [], splits = [];
+  let at = x === undefined ? null : x;
+  if (at === null) {
+    for (const d of r.dropped.slice(0, 3)) { const s = split(d.text.split(' = ')[0]); if (s !== null) splits.push(s); }
+    return { ...r, used: r.kept.map((k) => k.text), splits, left: null };
+  }
+  for (const c of claimsOf(text)) {
+    const a = evaluate(c.left), b = evaluate(c.right), work = a.ops > 0 ? c.left : c.right;
+    if (!c.ok) { const w = LEFT.wrong(at, work); if (w !== null) at = w.left; continue; }
+    // (the line is true, so its two sides are one value)
+    const got = a.ops > 0 && b.ops > 0 ? LEFT.rewrite(at, c.left, c.right) : LEFT.cross(at, work, a.value);
+    if (got !== null) { at = got.left; used.push(`${c.left} = ${c.right}`); }
+  }
+  return { ...r, used, splits, left: at };
+}
+// recall(M, x, asked, mem) → the memory is asked for every step that could be done next, each once per problem; a
+// step it holds is crossed off, which can open new steps, so it asks until nothing more comes back
+function recall(M, x, asked, mem) {
+  const served = [];
+  let at = x, again = M !== null && x !== null;
+  while (again) {
+    again = false;
+    for (const a of LEFT.atoms(at)) {
+      if (asked.has(a.canon)) continue;
+      asked.add(a.canon);
+      const fact = MEM.lookup(M, a.canon, a.text, mem), parts = fact === null ? [] : fact.split(' = ');
+      const got = fact === null ? null : LEFT.cross(at, parts[0], num(parts[1]));
+      if (got !== null) { at = got.left; served.push(fact); again = true; break; }
+    }
+  }
+  return { left: at, served };
+}
+const leftOf = (x) => (x === null ? null : LEFT.left(x));
+const done = (x) => x !== null && LEFT.ops(x) === 0;
+
+// ruling(j, served, x) → the checker's message after a pass that did not finish, from its reading j of the reply,
+// the facts the memory served, and what is left. It never gives a right value for a wrong step.
+function ruling(j, served, x) {
+  const lines = [];
+  if (j.used.length) lines.push(`Right: ${j.used.join('; ')}`);
+  if (j.dropped.length) lines.push(`Wrong: ${j.dropped.map((d) => d.text).join('; ')}`);
+  for (const s of j.splits) lines.push(`Smaller steps: ${s}`);
+  if (j.kept.length + j.dropped.length === 0) lines.push('No step could be checked. Write each step as: working = number');
+  if (served.length) lines.push(`Already checked, you can use these: ${served.join('; ')}`);
+  if (x !== null) lines.push(done(x) ? 'Every step is done. Give the result of the last step as the answer.' : `Left to do: ${LEFT.left(x)}`);
+  else if (!j.dropped.length) lines.push(j.answer === null ? 'There was no ANSWER line.' : 'The answer is not right yet.');
+  lines.push('One step per line, then ANSWER: number');
+  return lines.join('\n');
+}
+// the worked examples: two plain ones, and one that shows a wrong step being split and put right. The ruling in it
+// is the one this file gives that reply.
+const SHOWN = { statement: 'A current of 12 A flows through a 45 Ω resistor. Power = current × current × resistance. How many watts?', ask: '12 × 12 × 45', check: { type: 'value', value: '6480' } };
+const SLIP = '12 × 12 = 144\n144 × 45 = 6380\nANSWER: 6380', TOLD = judge(SLIP, SHOWN, LEFT.start(SHOWN.ask));
+const SHOTS = [
+  ['A 6 kg box moves at 12 m/s. Kinetic energy = 0.5 × mass × speed × speed. How many joules?', '12 × 12 = 144\n0.5 × 6 = 3\n3 × 144 = 432\nANSWER: 432'],
+  ['Work out 34 × 7 + 15 × 8.', '34 × 7 = 238\n15 × 8 = 120\n238 + 120 = 358\nANSWER: 358'],
+  [SHOWN.statement, SLIP],
+  [ruling(TOLD, [], TOLD.left), '144 × 40 = 5760\n144 × 5 = 720\n5760 + 720 = 6480\nANSWER: 6480'],
+];
+
+// opening(statement, facts, x) → the conversation a problem starts with. When the memory already held steps of it,
+// they are named, with what is left to do.
+function opening(statement, facts, x) {
+  const served = Array.isArray(facts) ? facts : [], at = x === undefined ? null : x;
+  const given = served.length === 0 ? '' : `\nAlready checked, you can use these: ${served.join('; ')}${at === null ? '' : done(at) ? '\nEvery step is done. Give the result of the last step as the answer.' : `\nLeft to do: ${LEFT.left(at)}`}`;
+  return [{ role: 'system', content: SYSTEM }, ...SHOTS.flatMap(([u, a]) => [{ role: 'user', content: u }, { role: 'assistant', content: a }]), { role: 'user', content: `${statement}${given}` }];
+}
+
+// caller(ask) → a call that remembers: the same conversation is asked of the model once, however many loops need it
+function caller(ask) {
+  const memo = new Map();
+  return async (messages, maxTokens) => {
+    const key = JSON.stringify([messages, maxTokens]);
+    if (memo.has(key)) return { ...memo.get(key), cached: true };
+    const r = await ask(messages, maxTokens);
+    const c = { text: typeof get(r, 'text') === 'string' ? r.text : '', ms: Number(get(r, 'ms')) || 0, ttft: get(r, 'ttft') ?? null, prompt: get(r, 'prompt') ?? null, reply: get(r, 'reply') ?? null, cut: get(r, 'cut') === true };
+    memo.set(key, c);
+    return { ...c, cached: false };
+  };
+}
+const row = (c, r, extra) => ({ said: c.text, ms: c.ms, ttft: c.ttft, prompt: c.prompt, reply: c.reply, cached: c.cached === true, cut: c.cut === true, kept: r.kept.map((x) => x.text), dropped: r.dropped.map((x) => x.text), answer: r.answer, home: r.home, ...extra });
+const base = (task, arm) => ({ id: get(task, 'id'), arm, tier: get(task, 'tier'), family: get(task, 'family'), sheet: get(task, 'sheet') });
+const depthOf = (opts) => { const d = get(opts, 'depth'); return Number.isInteger(d) && d > 0 && d <= 12 ? d : SETTINGS.depth; };
+const tokensOf = (opts) => { const t = get(opts, 'maxTokens'); return Number.isInteger(t) && t > 0 ? t : SETTINGS.maxTokens; };
+const homeAt = (passes) => { const i = passes.findIndex((p) => p.home); return i < 0 ? null : i + 1; };
+// opts.onPass(pass, n) is told of each pass as it is recorded, so a page can show a climb while it happens
+const tell = async (opts, passes) => { const f = get(opts, 'onPass'); if (typeof f === 'function') await f(passes[passes.length - 1], passes.length); };
+
+// climb(task, call, opts) → the record of one problem's climb. opts.memory is the run's memory, or null for a climb
+// with no memory between problems. Each pass records what was served to it, which lines crossed something off, and
+// what was left to do after it.
+async function climb(task, call, opts) {
+  const M = get(opts, 'memory') || null, depth = depthOf(opts), maxTokens = tokensOf(opts), mem = get(opts, 'mem'), passes = [], asked = new Set();
+  const first = recall(M, LEFT.start(get(task, 'ask')), asked, mem);
+  const messages = opening(get(task, 'statement'), first.served, first.left);
+  let x = first.left, served = first.served, told = null, stalled = false;
+  for (let d = 1; d <= depth; d++) {
+    const c = await call(messages, maxTokens), j = judge(whole(c), task, x);
+    if (M) for (const k of j.kept) MEM.fold(M, k, get(task, 'id'));
+    const next = j.home ? { left: j.left, served: [] } : recall(M, j.left, asked, mem);
+    x = next.left;
+    passes.push(row(c, j, { used: j.used, served, left: leftOf(x) }));
+    await tell(opts, passes);
+    if (j.home) break;
+    const say = ruling(j, next.served, x);
+    // the same reply to the same ruling: with a model that always picks its likeliest word, the next pass would repeat it
+    if (say === told && c.text === passes[d - 2].said) { stalled = true; break; }
+    told = say; served = next.served;
+    messages.push({ role: 'assistant', content: c.text }, { role: 'user', content: say });
+  }
+  return { ...base(task, M ? 'climb' : 'climb-alone'), passes, homeAt: homeAt(passes), stalled };
+}
+
+// retry(task, call, opts) → told only "not right", up to the same number of passes
+async function retry(task, call, opts) {
+  const depth = depthOf(opts), maxTokens = tokensOf(opts), passes = [], messages = opening(get(task, 'statement'), []);
+  let stalled = false;
+  for (let d = 1; d <= depth; d++) {
+    const c = await call(messages, maxTokens), r = rule(whole(c), task);
+    passes.push(row(c, r, { served: [] }));
+    await tell(opts, passes);
+    if (r.home) break;
+    if (d > 1 && c.text === passes[d - 2].said) { stalled = true; break; }
+    messages.push({ role: 'assistant', content: c.text }, { role: 'user', content: RETRY });
+  }
+  return { ...base(task, 'retry'), passes, homeAt: homeAt(passes), stalled };
+}
+
+// naive(task, call, opts) → the model reviews its own working with no checker; the rulings are recorded for scoring
+// only and never shown to it. It stops when its answer is the same two passes running.
+async function naive(task, call, opts) {
+  const depth = depthOf(opts), maxTokens = tokensOf(opts), passes = [], messages = opening(get(task, 'statement'), []);
+  for (let d = 1; d <= depth; d++) {
+    const c = await call(messages, maxTokens), r = rule(whole(c), task);
+    passes.push(row(c, r, { served: [] }));
+    await tell(opts, passes);
+    if (d > 1 && r.answer !== null && r.answer === passes[d - 2].answer) break;
+    messages.push({ role: 'assistant', content: c.text }, { role: 'user', content: REVIEW });
+  }
+  return { ...base(task, 'naive'), passes, homeAt: homeAt(passes), stalled: false };
+}
+const ARMS = { climb, 'climb-alone': climb, retry, naive };
+
+// a call that hands back a record's own replies in order, in place of a model
+const recorded = (rec) => {
+  const said = Array.isArray(get(rec, 'passes')) ? rec.passes : [];
+  let at = 0;
+  return async () => { const p = said[at++] || {}; return { text: typeof p.said === 'string' ? p.said : '', ms: Number(p.ms) || 0, ttft: p.ttft ?? null, prompt: p.prompt ?? null, reply: p.reply ?? null, cached: p.cached === true, cut: p.cut === true }; };
+};
+// run(tasks, arm, call, opts) → every problem's record for one loop, worked through in order. The climb's memory
+// starts empty and lasts the whole run. opts.done holds records already made (a run picked up after the tab was
+// closed): those problems are decided again from their own replies, which rebuilds the memory, and the model is asked
+// only for the rest. onDone(record, memory) is called after each problem the model worked.
+async function run(tasks, arm, call, opts) {
+  const M = arm === 'climb' ? MEM.create() : null, records = [];
+  const prior = new Map((Array.isArray(get(opts, 'done')) ? opts.done : []).map((r) => [get(r, 'id'), r]));
+  for (const task of Array.isArray(tasks) ? tasks : []) {
+    const was = prior.get(get(task, 'id'));
+    const rec = await ARMS[arm](task, was ? recorded(was) : call, { ...(opts || {}), memory: M });
+    records.push(rec);
+    if (!was && typeof get(opts, 'onDone') === 'function') await opts.onDone(rec, M);
+  }
+  return { arm, records, memory: M ? MEM.stats(M) : null };
+}
+// replay(tasks, arm, records, opts) → the same loop decided again from the recorded replies, in order, with no model
+async function replay(tasks, arm, records, opts) {
+  const byId = new Map((Array.isArray(records) ? records : []).map((r) => [get(r, 'id'), r]));
+  const all = (Array.isArray(tasks) ? tasks : []).map((t) => byId.get(get(t, 'id')) || { id: get(t, 'id'), passes: [] });
+  return run(tasks, arm, recorded(null), { ...(opts || {}), done: all });
+}
+return { SETTINGS, SYSTEM, RETRY, REVIEW, judge, ruling, SHOTS, opening, caller, climb, retry, naive, ARMS, run, replay };
+})();
+
+// src/tasks.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const TASKS = (() => {
+// tasks.mjs — the problems, made by code so every one has a finish line that is not a model. Each task is a physics
+// or maths calculation with whole-number inputs chosen so the right answer is exact. The answer is worked out here in
+// whole-number arithmetic when the task is made. Tasks come in SHEETS: one sheet is one setting (a cart, a car, a
+// circuit) and its questions share that setting's numbers, the way a worked problem sheet does, so a step checked for
+// one question can be the same step another question needs.
+//
+// Three tiers, set before anything is measured (they are predictions, and the page shows where they were wrong):
+//   easy   one small step: expected right first time
+//   climb  two to five steps with two-digit numbers: expected wrong first time, reachable with checked steps
+//   wall   nothing to climb by (a search with no partial credit) or far more steps than the passes allow:
+//          expected not reached
+// Pure and deterministic: the same seed gives the same sheets, byte for byte.
+
+const { evaluate, show } = EXACT;
+
+function prng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const PRIMES = [101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199];
+const value = (n) => ({ type: 'value', value: String(n) });
+
+// every family: its tier, what it asks, and its finish line. q holds the sheet's shared numbers. A problem with one
+// right value carries the calculation it asks for (ask), and its finish line is that calculation's exact value.
+const FAMILIES = {
+  force: { tier: 'easy', make: (q) => ({ statement: `A ${q.s1} kg mass accelerates at ${q.s2} m/s². Force = mass × acceleration. What is the force in newtons?`, ask: `${q.s1} × ${q.s2}` }) },
+  distance: { tier: 'easy', make: (q) => ({ statement: `A cyclist rides at ${q.s3} m/s for ${q.t} s. Distance = speed × time. How many metres?`, ask: `${q.s3} × ${q.t}` }) },
+  volts: { tier: 'easy', make: (q) => ({ statement: `A current of ${q.s2} A flows through a ${q.s4} Ω resistor. Voltage = current × resistance. How many volts?`, ask: `${q.s2} × ${q.s4}` }) },
+  weight: { tier: 'easy', make: (q) => ({ statement: `A ${q.m} kg crate sits on the floor. Weight = mass × 10. What is its weight in newtons?`, ask: `${q.m} × 10` }) },
+
+  energy: { tier: 'climb', make: (q) => ({ statement: `A ${q.m} kg cart moves at ${q.v} m/s. Kinetic energy = 0.5 × mass × speed × speed. How many joules?`, ask: `0.5 × ${q.m} × ${q.v} × ${q.v}` }) },
+  squares: { tier: 'climb', make: (q) => ({ statement: `A box is ${q.v} cm long, ${q.d} cm wide and ${q.m2} cm high. Diagonal squared = length × length + width × width + height × height. What is the diagonal squared?`, ask: `${q.v} × ${q.v} + ${q.d} × ${q.d} + ${q.m2} × ${q.m2}` }) },
+  tank: { tier: 'climb', make: (q) => ({ statement: `A tank is ${q.v} cm long, ${q.d} cm wide and ${q.m2} cm deep. Volume = length × width × depth. How many cubic centimetres?`, ask: `${q.v} × ${q.d} × ${q.m2}` }) },
+  dot: { tier: 'climb', make: (q) => ({ statement: `Work out ${q.v} × ${q.d} + ${q.i} × ${q.m2} + ${q.r} × ${q.s4}.`, ask: `${q.v} × ${q.d} + ${q.i} × ${q.m2} + ${q.r} × ${q.s4}` }) },
+  power: { tier: 'climb', make: (q) => ({ statement: `A current of ${q.i} A flows through a ${q.r} Ω resistor. Power = current × current × resistance. How many watts?`, ask: `${q.i} × ${q.i} × ${q.r}` }) },
+  series: { tier: 'climb', make: (q) => ({ statement: `Add up all the whole numbers from ${q.i} to ${q.r}. Sum = (first + last) × how many ÷ 2, and there are ${q.r - q.i + 1} numbers. What is the sum?`, ask: `(${q.i} + ${q.r}) × ${q.r - q.i + 1} ÷ 2` }) },
+  momentum: { tier: 'climb', make: (q) => ({ statement: `Three carts move the same way: ${q.m} kg at ${q.v} m/s, ${q.m2} kg at ${q.d} m/s and ${q.i} kg at ${q.r} m/s. Total momentum = ${q.m} × ${q.v} + ${q.m2} × ${q.d} + ${q.i} × ${q.r}. What is it in kg m/s?`, ask: `${q.m} × ${q.v} + ${q.m2} × ${q.d} + ${q.i} × ${q.r}` }) },
+  trapezium: { tier: 'climb', make: (q) => ({ statement: `A trapezium has parallel sides of ${q.i} cm and ${q.r} cm, and they are ${q.m} cm apart. Area = 0.5 × (first side + second side) × distance apart. How many square centimetres?`, ask: `0.5 × (${q.i} + ${q.r}) × ${q.m}` }) },
+
+  factor: { tier: 'wall', make: (q) => ({ statement: `The number ${q.p1 * q.p2} is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.`, check: { type: 'factors', n: String(q.p1 * q.p2) } }) },
+  root: { tier: 'wall', make: (q) => ({ statement: `A whole number x satisfies x × x × x + ${q.s2} × x = ${q.v * q.v * q.v + q.s2 * q.v}. Find x.`, check: { type: 'root', n: String(q.v * q.v * q.v + q.s2 * q.v), b: String(q.s2) } }) },
+  product: { tier: 'wall', make: (q) => ({ statement: `Work out ${q.m} × ${q.v} × ${q.d} × ${q.r}.`, ask: `${q.m} × ${q.v} × ${q.d} × ${q.r}` }) },
+  grid: { tier: 'wall', make: (q) => ({ statement: `Work out ${q.v} × (${q.d} × ${q.r} - ${q.i} × ${q.m}) - ${q.m2} × (${q.i} × ${q.r} - ${q.d} × ${q.v}) + ${q.s4} × (${q.i} × ${q.m} - ${q.d} × ${q.d}).`, ask: `${q.v} × (${q.d} × ${q.r} - ${q.i} × ${q.m}) - ${q.m2} × (${q.i} × ${q.r} - ${q.d} × ${q.v}) + ${q.s4} × (${q.i} × ${q.m} - ${q.d} × ${q.d})` }) },
+};
+const TIERS = ['easy', 'climb', 'wall'];
+const of = (tier) => Object.keys(FAMILIES).filter((f) => FAMILIES[f].tier === tier);
+
+// sheet(seed, index) → one sheet: its shared numbers, and eight questions (2 easy, 4 climb, 2 wall). The families
+// rotate with the sheet's index so every family appears equally often across a set.
+function sheet(seed, index) {
+  const r = prng((Math.imul(seed | 0, 2654435761) ^ Math.imul(index + 1, 40503)) >>> 0);
+  const between = (lo, hi) => lo + Math.floor(r() * (hi - lo + 1));
+  const q = {
+    m: 2 * between(6, 19), v: between(11, 29), m2: between(11, 29), a: 2 * between(1, 4), t: between(3, 9), d: between(11, 29),
+    i: between(11, 19), r: between(21, 48), s1: between(2, 9), s2: between(2, 9), s3: between(2, 9), s4: between(2, 9),
+  };
+  const p = between(0, PRIMES.length - 2);
+  q.p1 = PRIMES[p]; q.p2 = PRIMES[between(p + 1, PRIMES.length - 1)];
+  const pick = (tier, n) => { const fams = of(tier); return Array.from({ length: n }, (_, k) => fams[(index * n + k) % fams.length]); };
+  const tasks = [...pick('easy', 2), ...pick('climb', 4), ...pick('wall', 2)].map((family) => {
+    const made = FAMILIES[family].make(q), ask = made.ask === undefined ? null : made.ask;
+    return { id: `${family}:${seed}-${index}`, sheet: index, family, tier: FAMILIES[family].tier, statement: made.statement, ask, check: ask === null ? made.check : value(show(evaluate(ask).value)) };
+  });
+  return { index, numbers: q, tasks };
+}
+// set(seed, sheets) → the tasks of that many sheets, in the order a run works through them
+function set(seed, sheets) {
+  const n = Number.isInteger(sheets) && sheets <= 200 ? sheets : 0;                // none, or fewer than none, makes no sheets
+  return Array.from({ length: n }, (_, i) => sheet(seed, i)).flatMap((s) => s.tasks);
+}
+// own(text) → a visitor's own calculation as a task, or null: the finish line is the exact value of what they typed
+function own(text) {
+  const e = typeof text === 'string' ? evaluate(text) : null;
+  return e === null || e.ops === 0 ? null : { id: 'own', sheet: -1, family: 'own', tier: 'own', statement: `Work out ${e.shown}.`, ask: e.shown, check: value(show(e.value)) };
+}
+return { FAMILIES, TIERS, sheet, set, own };
+})();
+
+// src/score.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const SCORE = (() => {
+// score.mjs — every number on the page, worked out from the recorded runs. Pure and total.
+// A problem is "home by pass d" when the checker ruled its answer right at pass d or earlier. For the naive loop,
+// which no checker stops, the question is different: is the answer it holds at pass d right (it can lose a right one)?
+const { mcnemar } = STATS;
+
+const get = (o, k) => { try { return o[k]; } catch { return undefined; } };
+const list = (x) => (Array.isArray(x) ? x : []);
+const rate = (n, d) => (d > 0 ? n / d : null);
+const TIERS = ['easy', 'climb', 'wall'];
+
+// homeBy(rec, d) → true when this record counts as right at depth d
+function homeBy(rec, d) {
+  const passes = list(get(rec, 'passes'));
+  if (get(rec, 'arm') === 'naive') { const p = passes[Math.min(d, passes.length) - 1]; return get(p, 'home') === true; }
+  const at = get(rec, 'homeAt');
+  return Number.isInteger(at) && at <= d;
+}
+// curve(records, depth) → the share right at each depth 1..depth
+function curve(records, depth) {
+  const rs = list(records);
+  return Array.from({ length: depth }, (_, i) => rate(rs.filter((r) => homeBy(r, i + 1)).length, rs.length));
+}
+// cost(records) → what the loop costs: its passes (each one is a model call when the loop runs by itself), and the
+// tokens and model time of those passes. calls is how many of them this run had to ask the model for: a
+// conversation another loop of the same run had already had is not asked for twice.
+function cost(records) {
+  const passes = list(records).flatMap((r) => list(get(r, 'passes')));
+  const sum = (k) => passes.reduce((a, p) => a + (Number(get(p, k)) || 0), 0);
+  return { passes: passes.length, calls: passes.filter((p) => get(p, 'cached') !== true).length, replyTokens: sum('reply'), promptTokens: sum('prompt'), seconds: sum('ms') / 1000, passesPerTask: rate(passes.length, list(records).length) };
+}
+// summary(records, depth) → one loop's results: overall and by tier
+function summary(records, depth) {
+  const rs = list(records);
+  const part = (xs) => { const c = curve(xs, depth); return { tasks: xs.length, first: c[0] ?? null, solved: c[depth - 1] ?? null, home: xs.filter((r) => homeBy(r, depth)).length, curve: c }; };
+  return { arm: get(rs[0], 'arm') || null, depth, ...part(rs), tiers: Object.fromEntries(TIERS.map((t) => [t, part(rs.filter((r) => get(r, 'tier') === t))])), cost: cost(rs) };
+}
+// paired(a, b, depth, tier) → problems only B got home, only A got home, and the exact two-sided McNemar p
+function paired(a, b, depth, tier) {
+  const keep = (r) => tier === undefined || get(r, 'tier') === tier;
+  const A = new Map(list(a).filter(keep).map((r) => [get(r, 'id'), homeBy(r, depth)]));
+  let aOnly = 0, bOnly = 0, both = 0, neither = 0;
+  for (const r of list(b).filter(keep)) {
+    if (!A.has(get(r, 'id'))) continue;
+    const x = A.get(get(r, 'id')), y = homeBy(r, depth);
+    if (x && y) both++; else if (x) aOnly++; else if (y) bOnly++; else neither++;
+  }
+  return { aOnly, bOnly, both, neither, p: mcnemar(aOnly, bOnly) };
+}
+// squares(c) → does the share NOT home shrink like a squaring from one pass to the next? For each step: the share
+// left after it, the square of the share left before it, and whether the first is at most the second. Shares are
+// compared to twelve decimal places, so a share that is exactly the square counts as holding.
+const twelve = (x) => Math.round(x * 1e12) / 1e12;
+function squares(c) {
+  const left = list(c).map((s) => (s === null ? null : 1 - s));
+  const steps = [];
+  for (let d = 1; d < left.length; d++) if (left[d] !== null && left[d - 1] !== null) steps.push({ from: d, to: d + 1, before: left[d - 1], after: left[d], square: left[d - 1] ** 2, holds: twelve(left[d]) <= twelve(left[d - 1] ** 2) });
+  return { steps, holds: steps.length > 0 && steps.every((s) => s.holds) };
+}
+// rot(records, depth) → for a loop no checker stops: how many problems held a right answer at some pass and a wrong one at the end
+function rot(records, depth) {
+  let lost = 0, gained = 0;
+  for (const r of list(records)) {
+    const first = homeBy(r, 1), last = homeBy(r, depth), ever = list(get(r, 'passes')).some((p) => get(p, 'home') === true);
+    if (ever && !last) lost++;
+    if (!first && last) gained++;
+  }
+  return { lost, gained };
+}
+// reuse(pairs) → what reusing the earlier turns saved: each pair is one pass run twice, once continuing the
+// conversation and once from nothing. factor = time to first word from nothing ÷ time continuing.
+function reuse(pairs) {
+  const ok = list(pairs).filter((p) => Number(get(p, 'fresh')) > 0 && Number(get(p, 'kept')) > 0);
+  const fresh = ok.reduce((a, p) => a + p.fresh, 0), kept = ok.reduce((a, p) => a + p.kept, 0);
+  return { pairs: ok.length, fresh, kept, factor: kept > 0 ? fresh / kept : null, same: ok.filter((p) => p.same === true).length };
+}
+return { TIERS, homeBy, curve, cost, summary, paired, squares, rot, reuse };
+})();
+
+// src/claims.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const CLAIMS = (() => {
+// claims.mjs — the verdict on every registered claim, worked out from the recorded sealed run. Pure and total.
+// The bars are CLAIMS.md's, word for word in BARS; test/claims.test.mjs checks the file still says each one. A claim
+// whose evidence is missing is pending (pass: null), never passed or failed by default. Every bar is tested on
+// whole-number counts of problems, so a result that is exactly on a bar is decided exactly.
+const { paired, squares, homeBy, curve, cost } = SCORE;
+
+const get = (o, k) => { try { return o[k]; } catch { return undefined; } };
+const pct = (x) => `${(x * 100).toFixed(1)}%`;
+const pts = (x) => `${(x * 100).toFixed(1)} points`;
+const NAMES = {
+  C1: 'The climb lifts', C2: 'Checking is what does it', C3: 'Left alone, it does not climb', C4: 'The memory earns its place',
+  C5: 'Easy is easy', C6: 'The climb tier climbs', C7: 'The wall holds', C8: 'Each pass squares what is left',
+};
+const BARS = {
+  C1: 'the climb gets at least 20 points more of the sealed problems right by its last pass than one try does, and more by an exact two-sided McNemar test, p < 0.05',
+  C2: 'the climb gets more of the sealed problems right by its last pass than the retry loop does with the same number of passes, by the same test, p < 0.05',
+  C3: 'the naive loop, at its last pass, has at most 5 points more of the sealed problems right than one try',
+  C4: 'with the memory, the climb gets at least as many sealed problems home as without it, and takes fewer passes of the model to do it',
+  C5: 'at least 80% of the easy tier right at one try',
+  C6: 'on the climb tier, at most 50% right at one try, and at least 40 points more after the climb',
+  C7: 'at most 20% of the wall tier home after the climb',
+  C8: 'on the climb tier, after every pass the share not yet home is at most the square of the share not yet home one pass earlier',
+};
+const pending = (id, why) => ({ id, pass: null, result: `pending: ${why}` });
+const beats = (p) => Math.sign(p.bOnly - p.aOnly) === 1 && p.p < 0.05;
+// one try, as records: the retry loop's first pass, cut to depth 1
+const firstTry = (recs) => recs.map((r) => ({ ...r, homeAt: homeBy(r, 1) ? 1 : null }));
+const of = (rs, tier) => rs.filter((r) => get(r, 'tier') === tier);
+const home = (rs, d) => rs.filter((r) => homeBy(r, d)).length;
+
+// evaluate(F) → [{ id, pass, result }]. F holds the depth and, per loop (retry, naive, climb-alone, climb), the records
+// of the run. Every number is worked out here from those records; a loop with no records is missing evidence.
+function evaluate(F) {
+  const f = F || {}, depth = get(f, 'depth'), recs = get(f, 'records') || {}, deep = Number.isInteger(depth) && depth >= 1;
+  const arm = (name) => { const r = get(recs, name); return deep && Array.isArray(r) && r.length > 0 ? r : null; };
+  const R = arm('retry'), N = arm('naive'), A = arm('climb-alone'), C = arm('climb');
+  const out = [];
+  if (R === null || C === null) out.push(pending('C1', 'needs the retry loop and the climb on the sealed problems'), pending('C2', 'needs the retry loop and the climb on the sealed problems'));
+  else {
+    const one = home(R, 1), up = home(C, depth), p1 = paired(firstTry(R), C, depth), p2 = paired(R, C, depth);
+    // 20 points: up / C.length - one / R.length >= 1/5, in whole numbers
+    out.push({ id: 'C1', pass: (up * R.length - one * C.length) * 5 >= R.length * C.length && beats(p1), result: `one try ${pct(one / R.length)}, the climb ${pct(up / C.length)}: ${pts(up / C.length - one / R.length)}; ${p1.bOnly} problems only the climb got home, ${p1.aOnly} only the one try, p = ${p1.p.toPrecision(3)}` });
+    out.push({ id: 'C2', pass: beats(p2), result: `retry ${pct(home(R, depth) / R.length)}, the climb ${pct(up / C.length)}; ${p2.bOnly} problems only the climb got home, ${p2.aOnly} only the retry loop, p = ${p2.p.toPrecision(3)}` });
+  }
+  if (R === null || N === null) out.push(pending('C3', 'needs the retry loop and the naive loop on the sealed problems'));
+  else {
+    const one = home(R, 1), last = home(N, depth);
+    // 5 points: last / N.length - one / R.length <= 1/20, in whole numbers
+    out.push({ id: 'C3', pass: (last * R.length - one * N.length) * 20 <= R.length * N.length, result: `one try ${pct(one / R.length)}, naive at its last pass ${pct(last / N.length)}: ${pts(last / N.length - one / R.length)}` });
+  }
+  out.push(A === null || C === null ? pending('C4', 'needs the climb with and without the memory on the sealed problems') : { id: 'C4', pass: home(C, depth) >= home(A, depth) && cost(C).passes < cost(A).passes, result: `home: ${home(C, depth)} with the memory, ${home(A, depth)} without; passes of the model: ${cost(C).passes} with, ${cost(A).passes} without` });
+  const easy = R === null ? [] : of(R, 'easy');
+  out.push(easy.length === 0 ? pending('C5', 'needs one try on the sealed easy problems') : { id: 'C5', pass: home(easy, 1) * 5 >= easy.length * 4, result: `${pct(home(easy, 1) / easy.length)} of the ${easy.length} easy problems right at one try` });
+  const cold = R === null ? [] : of(R, 'climb'), tier = C === null ? [] : of(C, 'climb'), wall = C === null ? [] : of(C, 'wall');
+  if (cold.length === 0 || tier.length === 0) out.push(pending('C6', 'needs one try and the climb on the sealed climb-tier problems'));
+  else {
+    const first = home(cold, 1), after = home(tier, depth);
+    // at most half at one try; and 40 points: after / tier.length - first / cold.length >= 2/5, in whole numbers
+    out.push({ id: 'C6', pass: first * 2 <= cold.length && (after * cold.length - first * tier.length) * 5 >= 2 * tier.length * cold.length, result: `${pct(first / cold.length)} of the ${tier.length} climb-tier problems right at one try, ${pct(after / tier.length)} after the climb: ${pts(after / tier.length - first / cold.length)}` });
+  }
+  out.push(wall.length === 0 ? pending('C7', 'needs the climb on the sealed wall problems') : { id: 'C7', pass: home(wall, depth) * 5 <= wall.length, result: `${home(wall, depth)} of the ${wall.length} wall problems home after the climb (${pct(home(wall, depth) / wall.length)})` });
+  if (tier.length === 0) out.push(pending('C8', 'needs the climb on the sealed climb-tier problems'));
+  else {
+    const c = curve(tier, depth), sq = squares(c);
+    out.push({ id: 'C8', pass: sq.holds, result: sq.steps.length ? `share not home after each pass: ${c.map((s) => pct(1 - s)).join(', ')}; it held at ${sq.steps.filter((s) => s.holds).length} of ${sq.steps.length} steps` : 'only one pass, so there is no step to test' });
+  }
+  return out;
+}
+return { NAMES, BARS, evaluate };
+})();
+
+// app.js — the page. The kernels above it are the gated code, inlined byte for byte; this file only shows what they
+// compute and drives the model in the tab. Every number it writes comes from a recorded run through SCORE and CLAIMS.
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pct = (x) => (x === null || x === undefined || Number.isNaN(x) ? '—' : `${(x * 100).toFixed(1)}%`);
+const bind = (k, html) => { for (const el of document.querySelectorAll(`[data-bind="${k}"]`)) el.innerHTML = html; };
+const getJSON = async (p) => { try { const r = await fetch(p); return r.ok ? await r.json() : null; } catch { return null; } };
+const NM = '<span class="pend">not measured yet</span>';
+const WEBLLM = 'https://esm.run/@mlc-ai/web-llm@0.2.79';
+const MODELS = { 'Llama-3.2-1B-Instruct-q4f16_1-MLC': 'Llama 3.2 1B, 4-bit (about 880 MB)' };
+const ARMS = ['retry', 'naive', 'climb-alone', 'climb'];
+const ARM_NAMES = { single: 'one try', retry: 'retry (told only "not right")', naive: 'naive (re-reads its own work)', 'climb-alone': 'the climb, no memory between problems', climb: 'the climb' };
+const TIER_NAMES = { easy: 'easy', climb: 'climb', wall: 'wall' };
+const S = { data: null, engine: null, model: null, gpu: null, busy: false, view: 'published', local: null, kvLocal: null, onToken: null, canRun: false };
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch { /* storage off */ } },
+};
+try { performance.setResourceTimingBufferSize(100000); } catch { /* older browsers */ }
+
+// ── the theme switch (light → dark → the device's own) ──
+(function theme() {
+  const root = document.documentElement;
+  let t = null;
+  try { t = localStorage.getItem('climb-theme'); } catch { t = null; }
+  if (t === 'light' || t === 'dark') root.dataset.theme = t;
+  $('theme').addEventListener('click', () => {
+    const next = root.dataset.theme === 'light' ? 'dark' : root.dataset.theme === 'dark' ? '' : 'light';
+    if (next) root.dataset.theme = next; else delete root.dataset.theme;
+    try { if (next) localStorage.setItem('climb-theme', next); else localStorage.removeItem('climb-theme'); } catch { /* storage off */ }
+  });
+})();
+
+// ── the sets and the facts worked out from a run ──
+const tasksOf = (set) => { const s = S.data.settings.sets[set]; return s ? TASKS.set(s.seed, s.sheets) : []; };
+const recordsOf = (run, arm) => (run && run.arms && run.arms[arm] && Array.isArray(run.arms[arm].records) ? run.arms[arm].records : []);
+const covers = (run, arm, tasks) => { const ids = new Set(recordsOf(run, arm).map((r) => r.id)); return tasks.length > 0 && tasks.every((t) => ids.has(t.id)); };
+// facts(run, set) → everything the page says about one run of one set
+function facts(run, set) {
+  const tasks = tasksOf(set), depth = S.data.settings.depth, F = { set, tasks, depth, run: run || null, kv: S.data.runs.kv || null };
+  for (const arm of ARMS) F[arm] = covers(run, arm, tasks) ? SCORE.summary(recordsOf(run, arm), depth) : null;
+  F.records = Object.fromEntries(ARMS.map((a) => [a, F[a] ? recordsOf(run, a) : null]));
+  F.memory = F.climb && run.arms.climb.memory ? run.arms.climb.memory : null;
+  return F;
+}
+function view() {
+  const mine = S.view === 'mine' && S.local, run = mine ? S.local : S.data.runs.sealed, set = mine ? S.local.set : 'sealed';
+  return facts(run, set);
+}
+const sourceOf = (run) => (run ? `${MODELS[run.model] ? MODELS[run.model].split(' (')[0] : esc(run.model)}, in a browser tab (WebLLM 0.2.79), ${esc(run.gpu || 'GPU not reported')}, ${String(run.at).slice(0, 10)}` : 'not measured yet');
+
+// ── one climb as a story: what the cell was told before each pass, what it wrote, and the ruling on each line ──
+const isClimb = (rec) => rec.arm === 'climb' || rec.arm === 'climb-alone';
+// what is left of a problem's calculation once the facts the memory served are crossed off
+const afterServed = (task, served) => (served || []).reduce((x, fact) => { const [w, v] = fact.split(' = '), got = x === null ? null : LEFT.cross(x, w, EXACT.num(v)); return got === null ? x : got.left; }, LEFT.start(task.ask));
+function story(task, rec) {
+  const out = [], first = rec.passes[0] || {};
+  let before = LOOP.opening(task.statement, isClimb(rec) ? first.served || [] : [], isClimb(rec) ? afterServed(task, first.served) : null).pop().content;
+  for (const [i, p] of rec.passes.entries()) {
+    out.push({ n: i + 1, before, said: p.said, cut: p.cut === true, home: p.home, answer: p.answer, kept: p.kept, used: p.used || p.kept, dropped: p.dropped, served: p.served || [], left: p.left ?? null });
+    const next = rec.passes[i + 1];
+    // the message that went back in, made again by the loop's own code from what this pass recorded
+    before = rec.arm === 'retry' ? LOOP.RETRY : rec.arm === 'naive' ? LOOP.REVIEW : LOOP.ruling({ used: p.used || p.kept, kept: p.kept, dropped: p.dropped.map((text) => ({ text })), splits: p.left === null || p.left === undefined ? LOOP.judge(p.cut ? p.said.split('\n').slice(0, -1).join('\n') : p.said, task, null).splits : [], answer: p.answer }, next ? next.served || [] : [], p.left === null || p.left === undefined ? null : LEFT.start(p.left));
+  }
+  return out;
+}
+// a reply drawn line by line: a tick on a true line, a cross on a false one, nothing on a line that claims nothing
+function linesHTML(p, task, checked) {
+  const lines = String(p.said).split('\n'), claims = CHECK.claimsOf(p.cut ? lines.slice(0, -1).join('\n') : p.said), used = new Set(p.used);
+  return lines.map((l, n) => {
+    if (l.trim() === '') return '';
+    if (p.cut && n === lines.length - 1) return `<div><span class="muted">·</span> <span class="muted">${esc(l)}</span> <span class="small muted">cut off at the length limit, so not ruled on</span></div>`;
+    if (/^\W*(?:final\s+)?answer\b/i.test(l)) { const a = CHECK.answerOf(l), ok = a !== null && CHECK.home(task, a); return `<div><span class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'}</span> ${esc(l)} <span class="small ${ok ? 'pass' : 'fail'}">${ok ? 'right: home' : 'not right'}</span></div>`; }
+    const c = claims.filter((x) => x.line === n);
+    if (c.length === 0) return `<div><span class="muted">·</span> <span class="muted">${esc(l)}</span></div>`;
+    const ok = c.every((x) => x.ok), hit = c.some((x) => used.has(`${x.left} = ${x.right}`));
+    const word = !checked ? (ok ? 'true' : 'false') : !ok ? 'dropped' : hit ? 'kept: crossed off' : 'true, but not a step of this problem';
+    return `<div><span class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'}</span> ${esc(l)} <span class="small muted">${word}</span></div>`;
+  }).join('');
+}
+function storyHTML(task, rec, opts) {
+  const st = story(task, rec), o = opts || {}, depth = S.data.settings.depth, climb = isClimb(rec);
+  const head = `<p class="small muted">${esc(o.label || '')}</p><p><b>${esc(task.statement)}</b></p>`;
+  const body = st.map((p) => `<div class="stage ${p.home ? 'ok' : 'no'}"><b>Pass ${p.n} of ${depth}</b>${p.served.length ? ` <span class="small muted">· from the memory: ${esc(p.served.join('; '))}</span>` : ''}${p.n === 1 ? '' : `<details><summary class="small">what the ${climb ? 'checker' : 'page'} said first</summary><pre>${esc(p.before)}</pre></details>`}<div>${linesHTML(p, task, climb)}</div>${climb && p.left !== null && !p.home ? `<div class="small"><b>Left to do:</b> <code>${esc(p.left)}</code></div>` : ''}</div>`).join('');
+  const end = rec.homeAt && rec.arm !== 'naive' ? `<div class="verdict ok">Home at pass ${rec.homeAt}: the checker ruled the answer right.</div>` : rec.arm === 'naive' ? `<div class="verdict ${st[st.length - 1].home ? 'ok' : 'no'}">Nobody was checking. It stopped at pass ${st.length} with ${st[st.length - 1].home ? 'a right' : 'a wrong'} answer.</div>` : `<div class="verdict no">Not reached${rec.stalled ? ': it stalled (the same reply to the same ruling)' : `: ${st.length} passes used`}.</div>`;
+  return head + body + (o.open ? '' : end);
+}
+
+// ── the memory map: twelve chambers, each beside five others, filled as kept steps are written in ──
+function mapSVG(counts, note) {
+  const c = Array.isArray(counts) && counts.length === 12 ? counts : new Array(12).fill(0), max = Math.max(1, ...c);
+  const pos = (i) => { if (i === 0) return [150, 150]; if (i === 11) return [450, 150]; const ring = i <= 5 ? 0 : 1, k = ring === 0 ? i - 1 : i - 6, a = (k / 5) * 2 * Math.PI - Math.PI / 2 + ring * Math.PI / 5; return [(ring === 0 ? 150 : 450) + 105 * Math.cos(a), 150 + 105 * Math.sin(a)]; };
+  const edges = MEMORY.DODECA.flatMap((nb, i) => nb.filter((j) => j > i).map((j) => [i, j])).filter(([i, j]) => (i <= 5) === (j <= 5) || true);
+  const lines = edges.map(([i, j]) => { const [x1, y1] = pos(i), [x2, y2] = pos(j); return `<line x1="${x1.toFixed(0)}" y1="${y1.toFixed(0)}" x2="${x2.toFixed(0)}" y2="${y2.toFixed(0)}" stroke="var(--line)" stroke-width="1"/>`; }).join('');
+  const dots = c.map((n, i) => { const [x, y] = pos(i), r = 12 + 16 * Math.sqrt(n / max); return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="${n ? 'var(--series)' : 'var(--chip)'}" opacity="${n ? 0.85 : 1}" stroke="var(--line)"/><text x="${x.toFixed(0)}" y="${(y + 4).toFixed(0)}" text-anchor="middle" style="font-size:12px">${n}</text>`; }).join('');
+  return `<svg class="diagram" viewBox="0 0 600 300" role="img" aria-label="The memory: twelve chambers holding ${c.reduce((a, b) => a + b, 0)} kept steps">${lines}${dots}<text x="300" y="292" text-anchor="middle" class="muted">${esc(note || 'the memory: kept steps in each of its twelve chambers')}</text></svg>`;
+}
+
+// ── results ──
+function curveSVG(F) {
+  const series = [['single', F.retry ? Array.from({ length: F.depth }, () => F.retry.first) : null, 'var(--muted)', '4 4'], ['retry', F.retry && F.retry.curve, 'var(--series2)', ''], ['naive', F.naive && F.naive.curve, 'var(--series3)', ''], ['climb-alone', F['climb-alone'] && F['climb-alone'].curve, 'var(--series)', '6 3'], ['climb', F.climb && F.climb.curve, 'var(--series)', '']].filter((s) => s[1]);
+  if (!series.length) return NM;
+  const W = 640, H = 280, L = 44, B = 36, T = 14, R = 150, x = (d) => L + ((d - 1) / Math.max(1, F.depth - 1)) * (W - L - R), y = (v) => T + (1 - v) * (H - T - B);
+  const grid = [0, 0.25, 0.5, 0.75, 1].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="muted">${v * 100}%</text>`).join('');
+  const ticks = Array.from({ length: F.depth }, (_, i) => `<text x="${x(i + 1)}" y="${H - B + 16}" text-anchor="middle" class="muted">${i + 1}</text>`).join('');
+  const lines = series.map(([name, c, col, dash]) => `<polyline fill="none" stroke="${col}" stroke-width="${name === 'climb' ? 3 : 2}" ${dash ? `stroke-dasharray="${dash}"` : ''} points="${c.map((v, i) => `${x(i + 1).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>${c.map((v, i) => `<circle cx="${x(i + 1).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${name === 'climb' ? 3.5 : 2.5}" fill="${col}"/>`).join('')}`).join('');
+  const ends = series.map(([name, c, col], k) => `<text x="${W - R + 8}" y="${T + 16 + k * 18}" fill="${col}" style="fill:${col}">${esc(ARM_NAMES[name].split(' (')[0].split(',')[0])} ${pct(c[c.length - 1])}</text>`).join('');
+  return `<svg class="diagram" viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of problems with a right answer after each pass, for each loop">${grid}${ticks}${lines}${ends}<text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle" class="muted">pass</text></svg>`;
+}
+function renderResults(F) {
+  $('curve').innerHTML = curveSVG(F);
+  const row = (name, s, at1) => (s ? `<tr><td>${esc(ARM_NAMES[name])}</td><td class="num">${pct(at1 ?? s.first)}</td><td class="num"><b>${pct(name === 'single' ? s.first : s.solved)}</b> <span class="muted">(${name === 'single' ? Math.round(s.first * s.tasks) : s.home} of ${s.tasks})</span></td><td class="num">${name === 'single' ? s.tasks : s.cost.passes}</td><td class="num">${name === 'single' ? '1.00' : s.cost.passesPerTask.toFixed(2)}</td></tr>` : `<tr><td>${esc(ARM_NAMES[name])}</td><td colspan="4">${NM}</td></tr>`);
+  $('arms').innerHTML = `<table><thead><tr><th>loop</th><th class="num">right after pass 1</th><th class="num">right after pass ${F.depth}</th><th class="num">model calls</th><th class="num">passes per problem</th></tr></thead><tbody>${row('single', F.retry)}${row('retry', F.retry)}${row('naive', F.naive)}${row('climb-alone', F['climb-alone'])}${row('climb', F.climb)}</tbody></table>`
+    + (F.naive ? (() => { const r = SCORE.rot(F.records.naive, F.depth); return `<p class="small">The naive loop, with nobody checking: ${r.gained} problem${r.gained === 1 ? '' : 's'} went from wrong to right, and <span class="${r.lost ? 'fail' : ''}">${r.lost} held a right answer at some pass and ended wrong</span>.</p>`; })() : '');
+  const tier = (t) => `<tr><td>${TIER_NAMES[t]}</td><td class="num">${F.retry ? F.retry.tiers[t].tasks : '—'}</td>${['retry', 'naive', 'climb-alone', 'climb'].map((a, k) => (F[a] ? `${k === 0 ? `<td class="num">${pct(F[a].tiers[t].first)}</td>` : ''}<td class="num">${a === 'climb' ? '<b>' : ''}${pct(F[a].tiers[t].solved)}${a === 'climb' ? '</b>' : ''}</td>` : `${k === 0 ? '<td>—</td>' : ''}<td>—</td>`)).join('')}</tr>`;
+  $('tiers').innerHTML = F.retry ? `<table><thead><tr><th>tier</th><th class="num">problems</th><th class="num">one try</th><th class="num">retry</th><th class="num">naive</th><th class="num">climb, no memory</th><th class="num">the climb</th></tr></thead><tbody>${SCORE.TIERS.map(tier).join('')}</tbody></table>` : NM;
+  // each part's own number
+  const m = F.memory, kv = F.kv ? SCORE.reuse(F.kv.pairs) : null, parts = [];
+  parts.push(['The lift', F.climb && F.retry ? `${pct(F.retry.first)} right at one try, ${pct(F.climb.solved)} after the climb: ${((F.climb.solved - F.retry.first) * 100).toFixed(1)} points` : NM, 'what checked depth added over a single try']);
+  parts.push(['Depth multiplier', F.climb && F.retry && F.retry.first > 0 ? `${(F.climb.solved / F.retry.first).toFixed(2)}×` : F.climb && F.retry ? 'one try got none right, so there is no ratio' : NM, 'right after the climb ÷ right at one try']);
+  parts.push(['The memory', m ? `${m.facts} checked steps held. It was asked ${m.asks} times for a step a problem had to do; ${m.wanted} of those steps were in it, and the map found ${m.found} (${m.wanted ? pct(m.recall) : 'nothing to find'})` : NM, 'measured against an exact list of everything stored']);
+  parts.push(['What the memory changed', F.climb && F['climb-alone'] ? `home: ${F.climb.home} with the memory, ${F['climb-alone'].home} without; passes of the model: ${F.climb.cost.passes} against ${F['climb-alone'].cost.passes}` : NM, 'the same climb with and without memory between problems']);
+  parts.push(['GPU reuse', kv && kv.factor ? `${kv.factor.toFixed(2)}× faster to the first word on ${kv.pairs} later passes (${kv.kept.toFixed(1)} s continuing the conversation, ${kv.fresh.toFixed(1)} s starting from nothing)` : NM, F.kv ? esc(sourceOf(F.kv)) : 'run step 7 to measure it on this device']);
+  parts.push(['Cost of depth', F.climb && F.retry ? `${(F.climb.cost.passes / F.retry.tasks).toFixed(2)} model calls per problem for the climb, against 1; ${F.climb.cost.replyTokens} tokens written against ${recordsOf(F.run, 'retry').reduce((a, r) => a + (r.passes[0].reply || 0), 0)}` : NM, 'the price of the lift, in compute']);
+  $('parts').innerHTML = `<table><thead><tr><th>part</th><th>measured</th><th>what it is</th></tr></thead><tbody>${parts.map(([a, b, c]) => `<tr><td><b>${a}</b></td><td>${b}</td><td class="small muted">${c}</td></tr>`).join('')}</tbody></table>${m ? mapSVG(m.chambers, `the memory at the end of the run: ${m.facts} kept steps across its twelve chambers`) : ''}`;
+  // the wall
+  if (F.climb) {
+    const byId = new Map(F.tasks.map((t) => [t.id, t])), out = F.records.climb.filter((r) => !SCORE.homeBy(r, F.depth));
+    $('wallList').innerHTML = out.length ? `<table><thead><tr><th>tier</th><th>the problem</th><th class="num">passes</th><th>where it stopped</th></tr></thead><tbody>${out.map((r) => { const t = byId.get(r.id), last = r.passes[r.passes.length - 1]; return `<tr><td>${TIER_NAMES[r.tier] || esc(r.tier)}</td><td class="small">${esc(t.statement)}</td><td class="num">${r.passes.length}</td><td class="small"><span class="fail">not reached</span>${r.stalled ? ': stalled' : ''}. Last pass: ${last.kept.length} line${last.kept.length === 1 ? '' : 's'} true, ${last.dropped.length} false${last.answer === null ? ', no answer given' : `, answered ${esc(last.answer)}`}.${last.left ? ` Still left to do: <code>${esc(last.left)}</code>` : ' Nothing to climb by: no step of it can be checked.'}</td></tr>`; }).join('')}</tbody></table><p class="small">${out.length} of ${F.tasks.length} problems were not reached: ${SCORE.TIERS.map((t) => `${out.filter((r) => r.tier === t).length} ${TIER_NAMES[t]}`).join(', ')}.</p>` : '<p>Every problem was reached.</p>';
+  } else $('wallList').innerHTML = NM;
+}
+
+function renderHeadline(F, V) {
+  const c = F.climb, r = F.retry, n = F.naive;
+  bind('hl.cold', r ? `${pct(r.first)} <span class="muted">(${Math.round(r.first * r.tasks)} of ${r.tasks})</span>` : NM);
+  bind('hl.climb', c ? `${pct(c.solved)} <span class="muted">(${c.home} of ${c.tasks})</span>` : NM);
+  bind('hl.retry', r ? `${pct(r.solved)} <span class="muted">(${r.home} of ${r.tasks})</span>` : NM);
+  bind('hl.naive', n ? `${pct(n.solved)} <span class="muted">(${n.home} of ${n.tasks})</span>` : NM);
+  bind('hl.wall', c ? `${c.tasks - c.home} of ${c.tasks}` : NM);
+  bind('hl.cost', c && r ? `${(c.cost.passes / r.tasks).toFixed(2)}×` : NM);
+  bind('hl.privacy', F.run && F.run.privacy ? `${F.run.privacy.requests} requests` : NM);
+  const failed = V.filter((v) => v.pass === false), passed = V.filter((v) => v.pass === true), pending = V.filter((v) => v.pass === null && /^pending/.test(v.result));
+  bind('hl.result', c && r ? `On ${c.tasks} sealed problems, the model alone got ${pct(r.first)} right at one try. Told only "not right" and given ${F.depth} tries, ${pct(r.solved)}. Left to re-read its own work, ${n ? pct(n.solved) : '(not measured)'}. With every step checked, wrong steps split and kept steps remembered, <b>${pct(c.solved)}</b>. ${c.tasks - c.home} problems were never reached, and they are listed under <a href="#wall">the wall</a>.` : 'The sealed run has not been made yet. The build, the problems and the claims are in place, and the numbers will appear here when it is run.');
+  bind('hl.note', F.run ? `Source: ${S.view === 'mine' && S.local ? 'your run on this device' : 'the published sealed run'} (${sourceOf(F.run)}). Of the registered claims, ${passed.length ? `<span class="pass">${passed.length} pass</span> (${passed.map((v) => v.id).join(', ')})` : 'none pass'}${failed.length ? ` and <span class="fail">${failed.length} fail</span> (${failed.map((v) => v.id).join(', ')})` : ''}${pending.length ? `; ${pending.length} not measured yet` : ''}. Every verdict is worked out on this page, and the failures stay.` : 'Nothing has been measured on the sealed problems yet.');
+  bind('b.what', c && r ? `On the sealed problems it took the share finished from ${pct(r.first)} at one try to ${pct(c.solved)}.` : 'The lift is not measured yet.');
+  bind('b.not', c ? `It did not reach ${c.tasks - c.home} of ${c.tasks} problems.` : 'The limits are not measured yet.');
+  bind('b.cost', c && r ? `The climb made ${c.cost.passes} model calls on ${c.tasks} problems, ${(c.cost.passes / r.tasks).toFixed(2)} per problem against 1 for a single try.` : 'The cost is not measured yet.');
+  bind('b.cost2', c && r ? `${(c.cost.passes / r.tasks).toFixed(2)} model calls per problem against 1, and ${c.cost.seconds.toFixed(0)} s of model time on the sealed set against ${recordsOf(F.run, 'retry').reduce((a, x) => a + (x.passes[0].ms || 0), 0) / 1000 | 0} s.` : 'The cost is not measured yet.');
+  bind('b.retry', c && r ? (() => { const p = SCORE.paired(F.records.retry, F.records.climb, F.depth); return `With the same number of tries and only "not right" to go on, the model finished ${r.home} of ${r.tasks}; the climb finished ${c.home}. ${p.bOnly} problems only the climb reached, ${p.aOnly} only the retry loop reached (exact test p = ${p.p.toPrecision(2)}).`; })() : 'The comparison is not measured yet.');
+  bind('b.wall', c ? `${c.tasks - c.home} of ${c.tasks} sealed problems were not reached.` : 'The count is not measured yet.');
+  bind('b.req', F.run && F.run.privacy ? `While the sealed run was made, the browser counted <b>${F.run.privacy.requests}</b> network requests.` : 'The network-request count is not measured yet.');
+  bind('b.board', c && r ? `On ${c.tasks} sealed problems, checked depth took a small model from ${Math.round(r.first * r.tasks)} finished to ${c.home}, at ${(c.cost.passes / r.tasks).toFixed(2)} times the model calls, and it says plainly which ${c.tasks - c.home} it could not do.` : 'The result is not measured yet.');
+  bind('paper.sources', F.run ? `The numbers on this page: ${sourceOf(F.run)}; ${F.tasks.length} problems made by src/tasks.mjs from the seed in data/settings.json; ${F.depth} passes at most.` : 'No run is published yet.');
+}
+
+const NAMES = () => CLAIMS.NAMES;
+const badge = (v) => (v.pass === true ? '<span class="pass">PASS</span>' : v.pass === false ? '<span class="fail">FAIL</span>' : /^pending/.test(v.result) ? '<span class="pend">NOT MEASURED YET</span>' : '<span class="muted">reported</span>');
+function renderClaims(VP, VM) {
+  const mine = Object.fromEntries((VM || []).map((v) => [v.id, v]));
+  $('claimsTable').innerHTML = `<table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody>${VP.map((v) => `<tr><td><b>${v.id}</b> ${esc(NAMES()[v.id] || '')}</td><td class="small">${esc(CLAIMS.BARS[v.id] || '')}</td><td class="small">${esc(v.result.replace(/^pending: /, 'Not measured yet: '))}</td><td>${badge(v)}</td><td class="small">${mine[v.id] && !/^pending/.test(mine[v.id].result) ? `${badge(mine[v.id])}<br>${esc(mine[v.id].result)}` : '<span class="badge">UNVERIFIED HERE</span>'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderTrace(F) {
+  if (!F.climb) { $('trace').innerHTML = NM; return null; }
+  const byId = new Map(F.tasks.map((t) => [t.id, t]));
+  const pick = F.records.climb.find((r) => r.tier === 'climb' && r.homeAt !== null && r.homeAt >= 3) || F.records.climb.find((r) => r.homeAt !== null && r.homeAt >= 2) || F.records.climb[0];
+  $('trace').innerHTML = `<div class="card">${storyHTML(byId.get(pick.id), pick, { label: `${TIER_NAMES[pick.tier]} tier · ${pick.id} · from the run: ${sourceOf(F.run)}` })}</div>`;
+  return pick;
+}
+// the glass before the visitor runs anything: a recorded climb, labelled as recorded
+function renderGlassRecorded() {
+  const run = S.data.runs.sealed || S.data.runs.dev, set = S.data.runs.sealed ? 'sealed' : 'dev';
+  if (!run || !recordsOf(run, 'climb').length) { $('glass').innerHTML = `<p>${NM}: no climb has been recorded yet. Press the button to run one here.</p>`; return; }
+  const tasks = new Map(tasksOf(set).map((t) => [t.id, t])), recs = recordsOf(run, 'climb');
+  const pick = recs.find((r) => r.tier === 'climb' && r.homeAt !== null && r.homeAt >= 2) || recs.find((r) => r.homeAt !== null) || recs[0];
+  $('glass').innerHTML = storyHTML(tasks.get(pick.id), pick, { label: `Recorded, not live: ${sourceOf(run)} (${set} set, ${pick.id}).` });
+}
+
+function renderMoney(F) {
+  const prices = S.data.prices, c = F.climb, r = F.retry;
+  if (!c || !r || !prices || !prices.models) { $('money').innerHTML = NM; return; }
+  const per = (s) => ({ inTok: s.cost.promptTokens / s.tasks, outTok: s.cost.replyTokens / s.tasks });
+  const one = { inTok: recordsOf(F.run, 'retry').reduce((a, x) => a + (x.passes[0].prompt || 0), 0) / r.tasks, outTok: recordsOf(F.run, 'retry').reduce((a, x) => a + (x.passes[0].reply || 0), 0) / r.tasks }, cl = per(c);
+  const usd = (t, m) => (t.inTok * m.in + t.outTok * m.out) / 1e6;
+  $('money').innerHTML = `<table><thead><tr><th>where the tokens are bought</th><th class="num">one try, per 1,000 problems</th><th class="num">the climb, per 1,000 problems</th><th>price source</th></tr></thead><tbody><tr><td><b>Your own hardware (this page)</b></td><td class="num">$0</td><td class="num">$0</td><td class="small muted">no meter: electricity only</td></tr>${Object.entries(prices.models).map(([name, m]) => `<tr><td>${esc(name)} <span class="small muted">($${m.in} in, $${m.out} out per million tokens)</span></td><td class="num">$${(usd(one, m) * 1000).toFixed(2)}</td><td class="num">$${(usd(cl, m) * 1000).toFixed(2)}</td><td class="small"><a href="${esc(prices.source)}">${esc(prices.source.replace('https://', ''))}</a>, read ${esc(prices.read)}</td></tr>`).join('')}</tbody></table><p class="small muted">Tokens are this page's own measured counts on the sealed set: ${one.inTok.toFixed(0)} read and ${one.outTok.toFixed(0)} written per problem at one try; ${cl.inTok.toFixed(0)} read and ${cl.outTok.toFixed(0)} written per problem for the climb (later passes read only the new turn, because the GPU reuses the earlier ones; a cloud service that does not keep the conversation reads all of it again at every pass, and would charge for more than this). A cloud model would be a different model and would get more right at one try; this table prices the loop, not a like-for-like result.</p>`;
+}
+
+function renderBlueprint(F) {
+  const G = S.data.gates && S.data.gates.files ? S.data.gates.files : {};
+  const cell = (files) => { const got = files.map((f) => G[f]); if (got.some((g) => !g)) return '<span class="pend">built; its mutation gate is not recorded yet</span>'; const k = got.reduce((a, g) => a + g.killed, 0), n = got.reduce((a, g) => a + g.total, 0), ig = got.reduce((a, g) => a + (g.ignored || 0), 0); return got.every((g) => g.clean === true) ? `<span class="pass">built, gated ${k}/${n}${ig ? ` (${ig} equivalent, with the reason written down)` : ''}</span>` : `<span class="fail">built, gate not clean: ${k}/${n}</span>`; };
+  bind('bp.exact', cell(['src/exact.mjs'])); bind('bp.checker', cell(['src/checker.mjs'])); bind('bp.plan', cell(['src/plan.mjs'])); bind('bp.left', cell(['src/left.mjs'])); bind('bp.memory', cell(['src/keep.mjs'])); bind('bp.loop', cell(['src/loop.mjs'])); bind('bp.tasks', cell(['src/tasks.mjs'])); bind('bp.score', cell(['src/score.mjs', 'src/claims.mjs']));
+  const kv = F.kv ? SCORE.reuse(F.kv.pairs) : null;
+  bind('bp.reuse', kv && kv.factor ? `<span class="${kv.factor > 1 ? 'pass' : 'fail'}">measured: ${kv.factor.toFixed(2)}×</span>` : '<span class="pend">not measured yet</span>');
+}
+function renderWalk() {
+  const w = S.data.walk;
+  $('walk').innerHTML = w ? `<h3>A simulated buyer walk</h3><p class="small muted">${esc(w.note)}</p>${w.personas.map((p) => `<details><summary>${esc(p.who)}: ${esc(p.verdict)}</summary><ul>${p.gaps.map((g) => `<li>${esc(g.gap)} <span class="muted">→ ${esc(g.fix)}</span></li>`).join('')}</ul></details>`).join('')}` : '';
+}
+function renderViewBar(F) {
+  const L = S.local;
+  if (S.view === 'mine' && L) $('viewBar').innerHTML = `<b>Showing your run on this device.</b> ${L.set} set, ${ARMS.filter((a) => covers(L, a, F.tasks)).length} of ${ARMS.length} loops complete. ${esc(sourceOf(L))}. <button class="ghost" type="button" data-act="published">Show the published run</button> <button class="ghost" type="button" data-act="discard">Discard my run</button>`;
+  else $('viewBar').innerHTML = `Showing the published sealed run: ${esc(sourceOf(S.data.runs.sealed))}.${L ? ' <button class="ghost" type="button" data-act="mine">Show my run</button>' : ' Run step 5 to see your own device\'s numbers on this page.'}`;
+}
+async function renderAll() {
+  const F = view(), FP = facts(S.data.runs.sealed, 'sealed'), VP = CLAIMS.evaluate(FP), VM = S.local && S.local.set === 'sealed' ? CLAIMS.evaluate(facts(S.local, 'sealed')) : null;
+  renderViewBar(F); renderHeadline(F, S.view === 'mine' && VM ? VM : VP); renderResults(F); renderClaims(VP, VM); renderTrace(F); renderMoney(F); renderBlueprint(F); renderWalk();
+}
+
+// ── the model in the tab ──
+async function device() {
+  if (typeof navigator === 'undefined' || !navigator.gpu) { $('device').innerHTML = '<span class="fail">This browser has no WebGPU, so the model cannot run here.</span> Everything published on this page still reads, and step 6 still works. To run it, use a current Chrome or Edge on a computer with a graphics chip.'; return; }
+  try {
+    const a = await navigator.gpu.requestAdapter();
+    if (!a) throw new Error('no adapter');
+    const info = a.info || (a.requestAdapterInfo ? await a.requestAdapterInfo() : {});
+    S.gpu = [info.vendor, info.architecture].filter(Boolean).join(' ') || 'WebGPU';
+    S.canRun = true;
+    $('device').innerHTML = `<span class="pass">WebGPU is available</span> (${esc(S.gpu)}). The model can run here.`;
+  } catch { $('device').innerHTML = '<span class="fail">WebGPU did not start on this device.</span> The published numbers still read, and step 6 still works.'; }
+}
+async function load() {
+  if (S.engine) return true;
+  if (!S.canRun) { $('loadOut').innerHTML = '<span class="fail">No WebGPU on this device.</span>'; return false; }
+  const id = $('model').value || Object.keys(MODELS)[0];
+  $('load').disabled = true;
+  try {
+    const webllm = await import(WEBLLM);
+    S.engine = await webllm.CreateMLCEngine(id, { initProgressCallback: (p) => { $('loadOut').textContent = p.text; $('loadBar').style.width = `${Math.round((p.progress || 0) * 100)}%`; } });
+    S.model = id;
+    $('loadOut').innerHTML = `<span class="pass">Loaded:</span> ${esc(MODELS[id] || id)}. It is running on this device.`;
+    $('loadBar').style.width = '100%';
+    return true;
+  } catch (e) { $('loadOut').innerHTML = `<span class="fail">The model did not load:</span> ${esc(e && e.message)}`; $('load').disabled = false; return false; }
+}
+async function needModel(out) {
+  if (S.engine) return true;
+  if (out) out.innerHTML = 'Loading the model first: its progress is shown in step 2.';
+  const ok = await load();
+  if (out) out.innerHTML = ok ? '' : '<span class="fail">The model is not loaded, so this cannot run here.</span>';
+  return ok;
+}
+// ask(messages, maxTokens, opts) → one reply from the model, streamed; opts.fresh starts from nothing (no reuse)
+async function ask(messages, maxTokens, opts) {
+  if (opts && opts.fresh) await S.engine.resetChat();
+  const t0 = performance.now();
+  let text = '', first = null, usage = null, cut = false;
+  const stream = await S.engine.chat.completions.create({ messages, temperature: 0, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true } });
+  for await (const chunk of stream) {
+    const d = chunk.choices && chunk.choices[0] && chunk.choices[0].delta ? chunk.choices[0].delta.content || '' : '';
+    if (d) { if (first === null) first = performance.now() - t0; text += d; if (S.onToken) S.onToken(text); }
+    if (chunk.choices && chunk.choices[0] && chunk.choices[0].finish_reason === 'length') cut = true;
+    if (chunk.usage) usage = chunk.usage;
+  }
+  return { text, ms: performance.now() - t0, ttft: first === null ? null : first / 1000, prompt: usage ? usage.prompt_tokens ?? null : null, reply: usage ? usage.completion_tokens ?? null : null, cut };
+}
+const setBusy = (b) => { S.busy = b; for (const id of ['watch', 'ownGo', 'run', 'kv']) $(id).disabled = b; };
+
+// ── the live glass: one problem climbed in front of the visitor ──
+async function climbLive(task, target, out) {
+  if (S.busy || !(await needModel(out))) return null;
+  setBusy(true);
+  const depth = S.data.settings.depth, shown = { id: task.id, arm: 'climb-alone', tier: task.tier, passes: [], homeAt: null, stalled: false };
+  let n = 0;
+  const draw = (liveText) => { target.innerHTML = `<p class="small"><b>Live on this device.</b> Pass ${Math.max(1, n)} of ${depth} · ${shown.passes.reduce((a, p) => a + p.used.length, 0)} steps kept · ${shown.passes.reduce((a, p) => a + p.dropped.length, 0)} dropped · ${n} model call${n === 1 ? '' : 's'}</p>${shown.passes.length ? storyHTML(task, shown, { open: true }) : `<p><b>${esc(task.statement)}</b></p>`}${liveText !== null ? `<div class="stage"><b>Pass ${n} of ${depth}</b> <span class="small muted">· the model is writing</span><pre class="live">${esc(liveText)}</pre></div>` : ''}`; };
+  const call = async (messages, maxTokens) => {
+    n++; S.onToken = (t) => draw(t); draw('');
+    const c = await ask(messages, maxTokens);
+    S.onToken = null;
+    return { ...c, cached: false };
+  };
+  let rec = null;
+  try { rec = await LOOP.climb(task, call, { depth, maxTokens: S.data.settings.maxTokens, onPass: (pass) => { shown.passes.push(pass); draw(null); } }); target.innerHTML = `<p class="small"><b>Ran live on this device</b> (${esc(S.gpu || 'WebGPU')}): ${rec.passes.length} pass${rec.passes.length === 1 ? '' : 'es'}, ${n} model call${n === 1 ? '' : 's'}.</p>${storyHTML(task, rec, {})}`; }
+  catch (e) { target.innerHTML += `<p class="fail">It stopped: ${esc(e && e.message)}</p>`; }
+  setBusy(false);
+  return rec;
+}
+// a sheet of problems climbed one after another with the memory between them: the memory fills as steps are checked,
+// and a later problem is handed the steps it shares with an earlier one
+async function sheetLive(tasks, target, out) {
+  if (S.busy || !(await needModel(out))) return null;
+  setBusy(true);
+  const depth = S.data.settings.depth, done = [], now = [];
+  let n = 0, stats = null;
+  const row = (r, i) => `<details><summary>${r.homeAt ? `<span class="pass">✓ home at pass ${r.homeAt}</span>` : '<span class="fail">✗ not reached</span>'}${r.passes.some((p) => p.served.length) ? ' <span class="small">· handed steps from the memory</span>' : ''} · <span class="small">${esc(tasks[i].statement)}</span></summary>${storyHTML(tasks[i], r, {})}</details>`;
+  const draw = (liveText) => {
+    const cur = tasks[done.length];
+    target.innerHTML = `<p class="small"><b>Live on this device.</b> Problem ${Math.min(done.length + 1, tasks.length)} of ${tasks.length} · ${n} model call${n === 1 ? '' : 's'} · ${stats ? stats.facts : 0} checked steps in the memory${stats && stats.wanted ? ` · it was asked for ${stats.wanted} it held and found ${stats.found}` : ''}</p>${done.map(row).join('')}`
+      + (cur ? (now.length ? storyHTML(cur, { arm: 'climb', passes: now, homeAt: null, stalled: false }, { open: true }) : `<p><b>${esc(cur.statement)}</b></p>`) : '')
+      + (liveText !== null ? `<div class="stage"><b>Pass ${now.length + 1} of ${depth}</b> <span class="small muted">· the model is writing</span><pre class="live">${esc(liveText)}</pre></div>` : '')
+      + mapSVG(stats ? stats.chambers : null, 'the memory, filling as steps are checked');
+  };
+  const call = async (messages, maxTokens) => { n++; S.onToken = (t) => draw(t); draw(''); const c = await ask(messages, maxTokens); S.onToken = null; return { ...c, cached: false }; };
+  let got = null;
+  try {
+    got = await LOOP.run(tasks, 'climb', call, { depth, maxTokens: S.data.settings.maxTokens, mem: S.data.settings.mem, onPass: (p) => { now.push(p); draw(null); }, onDone: (rec, M) => { done.push(rec); now.length = 0; stats = KEEP.stats(M); draw(null); } });
+    target.innerHTML = `<p class="small"><b>Ran live on this device</b> (${esc(S.gpu || 'WebGPU')}): ${done.filter((r) => r.homeAt).length} of ${tasks.length} problems home, ${n} model calls, ${got.memory.facts} checked steps in the memory.</p>${done.map(row).join('')}${mapSVG(got.memory.chambers, `the memory after the sheet: ${got.memory.facts} checked steps across its twelve chambers`)}`;
+  } catch (e) { target.innerHTML += `<p class="fail">It stopped: ${esc(e && e.message)}</p>`; }
+  setBusy(false);
+  return got;
+}
+async function watch() {
+  const tasks = tasksOf('dev'), v = $('which').value;
+  if (v === 'sheet') { await sheetLive(tasks.filter((x) => x.sheet === 0 && x.tier === 'climb'), $('glass'), $('watchOut')); return; }
+  const t = tasks.find((x) => x.id === v) || tasks.find((x) => x.tier === 'climb');
+  if (t) await climbLive(t, $('glass'), $('watchOut'));
+}
+async function ownGo() {
+  const t = TASKS.own($('ownIn').value);
+  if (!t) { $('ownOut').innerHTML = '<span class="fail">That is not a calculation the checker can read.</span> Use numbers, + - × ÷ and brackets, for example (37 × 48 + 912) × 6.'; return; }
+  await climbLive(t, $('ownOut'), $('ownOut'));
+}
+
+// ── the measurement: every problem through all four loops, saved as it goes ──
+const sealCache = {};
+async function sealHash() {
+  if (sealCache.v === undefined) { try { const r = await fetch('SEAL.json'); sealCache.v = r.ok ? SHA.sha256((await r.text()).split('\r\n').join('\n')) : ''; } catch { sealCache.v = ''; } }
+  return sealCache.v || null;
+}
+const runKey = (set) => `climb-run-${set}`;
+// runSet({ set, ui }) → the run record; resumes a saved one
+async function runSet({ set = 'sample', ui = true } = {}) {
+  const tasks = tasksOf(set), key = runKey(set), depth = S.data.settings.depth, opts = { depth, maxTokens: S.data.settings.maxTokens, mem: S.data.settings.mem };
+  let L = store.get(key);
+  if (!L || L.set !== set || L.model !== S.model || L.complete) L = { v: 'the-climb-run/1', venue: 'tab (WebLLM 0.2.79, WebGPU)', model: S.model, gpu: S.gpu, ua: navigator.userAgent, set, sealSha256: await sealHash(), at: new Date().toISOString(), seconds: 0, segments: 0, privacy: { requests: 0 }, arms: {}, complete: false };
+  L.segments++;
+  if (ui) { S.local = L; S.view = 'mine'; $('save').disabled = true; }
+  const seen = [], obs = typeof PerformanceObserver === 'function' ? new PerformanceObserver((l) => { for (const e of l.getEntries()) seen.push(e.name); }) : null;
+  try { if (obs) obs.observe({ type: 'resource', buffered: false }); } catch { /* no observer */ }
+  const before = performance.getEntriesByType('resource').length, baseReq = L.privacy.requests || 0, t0 = Date.now(), base = L.seconds;
+  const call = LOOP.caller(ask), total = tasks.length * ARMS.length;
+  const count = () => { L.privacy = { requests: baseReq + Math.max(performance.getEntriesByType('resource').length - before, seen.length), observed: [...new Set([...(L.privacy.observed || []), ...seen])].slice(0, 20) }; };
+  for (const arm of ARMS) {
+    if (covers(L, arm, tasks)) continue;
+    const done = recordsOf(L, arm).slice();
+    L.arms[arm] = { records: done, memory: null };
+    const out = await LOOP.run(tasks, arm, call, { ...opts, done, onDone: async (rec, M) => {
+      L.arms[arm].records.push(rec);
+      if (M) L.arms[arm].memory = KEEP.stats(M);
+      L.seconds = base + Math.round((Date.now() - t0) / 1000); count(); store.set(key, L);
+      const n = ARMS.reduce((a, x) => a + recordsOf(L, x).length, 0);
+      if (ui) { $('runBar').style.width = `${Math.round((n / total) * 100)}%`; $('runOut').textContent = `${n} of ${total} (${ARM_NAMES[arm].split(' (')[0]}: ${recordsOf(L, arm).length} of ${tasks.length}) · ${L.seconds} s`; if (L.arms[arm].records.length % 8 === 0) await renderAll(); }
+    } });
+    L.arms[arm] = { records: out.records, memory: out.memory };
+    store.set(key, L);
+  }
+  try { if (obs) obs.disconnect(); } catch { /* none */ }
+  count();
+  L.complete = ARMS.every((a) => covers(L, a, tasks));
+  store.set(key, L);
+  return L;
+}
+async function runUI() {
+  if (S.busy || !(await needModel($('runOut')))) return;
+  setBusy(true);
+  const L = await runSet({ set: $('runWhich').value || 'sample', ui: true });
+  window.__climbRun = L;
+  await renderAll();
+  $('runOut').innerHTML = `<b>Done</b> in ${L.segments} sitting${L.segments === 1 ? '' : 's'}, ${L.seconds} s. Network requests while it ran: ${L.privacy.requests}. The page now shows this device's numbers. Scroll up, or press Save.`;
+  setBusy(false); $('save').disabled = false;
+}
+function save() {
+  if (!S.local) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S.local)], { type: 'application/json' }));
+  a.download = `the-climb-${S.local.set}-${String(S.local.at).slice(0, 10)}.json`;
+  a.click();
+}
+// re-judge: every published run decided again from its recorded replies, with no model
+const decided = (rs) => JSON.stringify(rs.map((r) => [r.id, r.homeAt, r.stalled, r.passes.map((p) => [p.kept, p.dropped, p.answer, p.home, p.served, p.used ?? null, p.left ?? null, p.cut === true])]));
+const same = (a, b) => decided(a) === decided(b);
+async function rejudge() {
+  const lines = [], opts = { depth: S.data.settings.depth, maxTokens: S.data.settings.maxTokens, mem: S.data.settings.mem };
+  for (const [name, set] of [['the published sealed run', 'sealed'], ['the published dev run', 'dev']]) {
+    const run = S.data.runs[set];
+    if (!run) { lines.push(`${name}: ${NM}`); continue; }
+    const tasks = tasksOf(set);
+    for (const arm of ARMS) {
+      const recs = recordsOf(run, arm);
+      if (!recs.length) continue;
+      const again = await LOOP.replay(tasks, arm, recs, opts), n = recs.length, ok = again.records.filter((r, i) => same([r], [recs[i]])).length;
+      lines.push(`${name}, ${esc(ARM_NAMES[arm].split(' (')[0])}: ${ok} of ${n} problems decided identically ${ok === n ? '<span class="pass">✓</span>' : '<span class="fail">✗</span>'}`);
+    }
+  }
+  $('rejudgeOut').innerHTML = `${lines.join('<br>')}<br><span class="muted">Each problem is decided again from the model's recorded replies by the code on this page: the checker, the planner, the memory and the loop run for real.</span>`;
+}
+// what the GPU reuses: the later passes of recorded climbs, timed continuing the conversation and from nothing
+async function kvMeasure() {
+  if (S.busy || !(await needModel($('kvOut')))) return;
+  setBusy(true);
+  const run = S.local && recordsOf(S.local, 'climb-alone').length ? S.local : S.data.runs.sealed || S.data.runs.dev, set = run === S.local ? S.local.set : S.data.runs.sealed ? 'sealed' : 'dev';
+  const tasks = new Map(tasksOf(set).map((t) => [t.id, t])), recs = recordsOf(run, 'climb-alone').filter((r) => r.passes.length >= 2).slice(0, S.data.settings.kvProblems || 8);
+  const out = { v: 'the-climb-reuse/1', venue: 'tab (WebLLM 0.2.79, WebGPU)', model: S.model, gpu: S.gpu, at: new Date().toISOString(), set, pairs: [] };
+  for (const [i, rec] of recs.entries()) {
+    const task = tasks.get(rec.id), st = story(task, rec), messages = LOOP.opening(task.statement, []);
+    for (let d = 1; d < st.length && d < 4; d++) {
+      // make the earlier turns for real, so the browser holds them; then time the next turn's first word both ways
+      const made = await ask(messages, S.data.settings.maxTokens, { fresh: d === 1 });
+      messages.push({ role: 'assistant', content: made.text }, { role: 'user', content: st[d].before });
+      const kept = await ask(messages, 1), fresh = await ask(messages, 1, { fresh: true });
+      out.pairs.push({ id: rec.id, pass: d + 1, kept: kept.ttft, fresh: fresh.ttft, keptPrompt: kept.prompt, freshPrompt: fresh.prompt, same: made.text === rec.passes[d - 1].said });
+      $('kvOut').textContent = `${out.pairs.length} later passes timed (${i + 1} of ${recs.length} problems)…`;
+      if (made.text !== rec.passes[d - 1].said) break;
+      await ask(messages.slice(0, -2), S.data.settings.maxTokens, { fresh: true });
+    }
+  }
+  S.kvLocal = out; window.__climbKv = out;
+  const r = SCORE.reuse(out.pairs);
+  $('kvOut').innerHTML = r.factor ? `<b>On this device:</b> ${r.factor.toFixed(2)}× faster to the first word when the conversation continues (${r.kept.toFixed(2)} s against ${r.fresh.toFixed(2)} s over ${r.pairs} later passes).` : 'No later pass could be timed here.';
+  setBusy(false);
+}
+
+// ── start ──
+const ready = (async function start() {
+  const [settings, published, gates, prices] = await Promise.all(['data/settings.json', 'data/published.json', 'data/gates.json', 'data/prices.json'].map(getJSON));
+  const P = published || {}, runs = {};
+  for (const k of ['sealed', 'dev', 'kv']) runs[k] = P[k] ? await getJSON(P[k]) : null;
+  S.data = { settings: settings || { depth: LOOP.SETTINGS.depth, maxTokens: LOOP.SETTINGS.maxTokens, mem: {}, sets: {} }, runs, gates, prices, walk: P.walk ? await getJSON(P.walk) : null };
+  $('model').innerHTML = Object.entries(MODELS).map(([id, name]) => `<option value="${id}">${esc(name)}</option>`).join('');
+  const dev = tasksOf('dev');
+  $('which').innerHTML = dev.filter((t) => t.tier === 'climb').slice(0, 8).map((t) => `<option value="${esc(t.id)}">${esc(t.statement.slice(0, 76))}${t.statement.length > 76 ? '…' : ''}</option>`).join('') + '<option value="sheet">A sheet of four problems, one after another, with the memory between them</option>' + dev.filter((t) => t.tier === 'wall').slice(0, 4).map((t) => `<option value="${esc(t.id)}">A wall: ${esc(t.statement.slice(0, 66))}${t.statement.length > 66 ? '…' : ''}</option>`).join('');
+  const saved = store.get(runKey('sealed')) || store.get(runKey('dev')) || store.get(runKey('sample'));
+  S.local = saved && saved.arms ? saved : null;
+  renderGlassRecorded();
+  await renderAll();
+  $('load').addEventListener('click', load);
+  $('watch').addEventListener('click', watch);
+  $('ownGo').addEventListener('click', ownGo);
+  $('run').addEventListener('click', runUI);
+  $('save').addEventListener('click', save);
+  $('rejudge').addEventListener('click', rejudge);
+  $('kv').addEventListener('click', kvMeasure);
+  $('viewBar').addEventListener('click', (e) => {
+    const act = e.target && e.target.dataset ? e.target.dataset.act : null;
+    if (act === 'mine') S.view = 'mine'; else if (act === 'published') S.view = 'published'; else if (act === 'discard') { store.del(runKey(S.local.set)); S.local = null; S.view = 'published'; } else return;
+    renderAll();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !S.busy && !(e.target && /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target.tagName))) watch(); });
+  device();
+  if (typeof navigator !== 'undefined' && navigator.serviceWorker && typeof location !== 'undefined' && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+window.__climb = { ready, S, runSet, needModel, kvMeasure, rejudge, renderAll, facts, tasksOf, story, storyHTML };
+</script>
+</body>
+</html>

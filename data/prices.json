@@ -1,0 +1,15 @@
+{
+ "source": "https://claude.com/pricing",
+ "read": "2026-11-09",
+ "note": "US dollars per million tokens, as printed on that page on that date. The page itself carries no date.",
+ "models": {
+  "claude-opus-5-5": {
+   "in": 4,
+   "out": 20
+  },
+  "claude-sonnet-5-5": {
+   "in": 2,
+   "out": 10
+  }
+ }
+}

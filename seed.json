@@ -1,0 +1,32 @@
+{
+  "genome": "1",
+  "name": "the-climb",
+  "kind": "repo",
+  "purpose": "Runs a small AI model in a browser tab through a calculation it gets wrong at the first try, and rules on every step by code: a true step is kept, a false one is dropped and split into smaller steps, until the checker says the answer is right or the climb stops.",
+  "lane": {
+    "id": "the-climb-step",
+    "accepts": "one step of working: arithmetic with numbers, + - × ÷, powers and brackets, and the value claimed for it",
+    "refuses": "anything that is not arithmetic it can work out exactly: words, letters, implied multiplication, division by zero"
+  },
+  "interface": {
+    "in": "{\"working\":\"14 × 529\",\"value\":\"7406\"}",
+    "out": "verified when the working comes to exactly that value, unverified when it does not, refused when the step cannot be read"
+  },
+  "judge": {
+    "what": "a step is right when its working, worked out in exact whole-number fractions, equals the value claimed for it",
+    "run": "node genome/judge.mjs",
+    "cases": {
+      "good": { "working": "14 × 529", "value": "7406" },
+      "bad": { "working": "14 × 529", "value": "7306" }
+    }
+  },
+  "boundary": {
+    "run": "node genome/lane.mjs",
+    "inLane": { "working": "225 × 37", "value": "8325" },
+    "outOfLane": { "working": "the best pizza topping", "value": "cheese" },
+    "escalate": "kar"
+  },
+  "health": { "run": "node genome/health.mjs" },
+  "tombstone": { "apply": "node genome/tombstone.mjs apply", "restore": "node genome/tombstone.mjs restore" },
+  "provenance": { "repo": "sjgant80-hub/the-climb", "by": "Kar, for Simon Gant", "born": "2026-11-23" }
+}

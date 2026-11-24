@@ -1,0 +1,24 @@
+{
+ "v": "the-climb-vendor/1",
+ "note": "each vendored file and where it came from",
+ "files": [
+  {
+   "file": "vendor/memory.mjs",
+   "repo": "sjgant80-hub/estate-nest",
+   "path": "kernel/fall-remember.mjs",
+   "commit": "0de2b6c7a9a0950cf09c193360582469e19085dc",
+   "upstreamSha256": "c3e66f3cdc9dc9f02948ac9a8321939fa4b16406e2213f3c7a6cb105ec87dbce",
+   "sha256": "cc39af7f489e6ed325fd6c61f9e7f9a47d03abfc60b408c4a7807d13df976f3e",
+   "how": "derived by scripts/vendor-memory.mjs: comment lines and trailing comments removed, one unused constant dropped, no code changed",
+   "gate": "estate-nest kernel/witness.baseline.json and its gate workflow"
+  },
+  {
+   "file": "vendor/stats.mjs",
+   "repo": "sjgant80-hub/docdecdemo",
+   "path": "src/stats.mjs",
+   "how": "byte for byte, as vendored in browser-swarm",
+   "sha256": "c8b36932ceeacc8a2c48ebf98c00a103c29708cd340b8e9edf81f218016cbe5c",
+   "gate": "docdecdemo data/v2/gates.json"
+  }
+ ]
+}

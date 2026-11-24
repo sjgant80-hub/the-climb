@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>The Climb: dev harness</title></head>
+<body>
+<p>Dev harness: loads the model and runs the loops on DEV sheets only. It is a builder's tool, not the page. Drive it from the console through <code>window.__dev</code>.</p>
+<pre id="out"></pre>
+<script type="module">
+// The dev harness. It refuses the sealed seed: only the dev seed may be run here. Every finished problem is saved in
+// this browser, so a run carries on after a reload.
+import * as webllm from 'https://esm.run/@mlc-ai/web-llm@0.2.79';
+import L from '../src/loop.mjs';
+import T from '../src/tasks.mjs';
+
+const DEV_SEED = 20261101;
+const S = { engine: null, model: null, state: 'idle', progress: '', runs: {}, now: null, log: [], partial: {} };
+const out = (t) => { document.getElementById('out').textContent = t; };
+async function load(model = 'Llama-3.2-1B-Instruct-q4f16_1-MLC') {
+  S.state = 'loading';
+  S.engine = await webllm.CreateMLCEngine(model, { initProgressCallback: (p) => { S.progress = p.text; out(p.text); } });
+  S.model = model; S.state = 'ready'; out('ready ' + model);
+  return model;
+}
+async function ask(messages, maxTokens) {
+  const t0 = performance.now();
+  const r = await S.engine.chat.completions.create({ messages, temperature: 0, max_tokens: maxTokens });
+  const u = r.usage || {}, x = u.extra || {};
+  const got = { text: r.choices[0].message.content || '', ms: performance.now() - t0, ttft: x.time_to_first_token_s ?? null, prompt: u.prompt_tokens ?? null, reply: u.completion_tokens ?? null, cut: r.choices[0].finish_reason === 'length' };
+  // every reply is logged as it arrives, with the message it answered, so a slow run can be read while it runs
+  S.log.push({ told: messages[messages.length - 1].content, said: got.text, ms: Math.round(got.ms), prompt: got.prompt, cut: got.cut });
+  return got;
+}
+const TIER = { climb: 0, easy: 1, wall: 2 };
+// one caller for every run, so a conversation one loop has already had is not asked of the model again
+const call = L.caller(ask);
+// run(key, { sheets, arm, families, tiers, limit, depth, sorted }) → one loop over dev tasks; progress in S.now,
+// result in S.runs[key]. sorted works the climb tier first (only for loops with no memory between problems).
+async function run(key, { sheets = 5, arm = 'retry', families = null, tiers = null, limit = 0, depth = 6, maxTokens = 128, seed = DEV_SEED, sorted = false } = {}) {
+  if (seed !== DEV_SEED) throw new Error('the dev harness runs the dev seed only');
+  let tasks = T.set(seed, sheets);
+  if (families) tasks = tasks.filter((t) => families.includes(t.family));
+  if (tiers) tasks = tasks.filter((t) => tiers.includes(t.tier));
+  if (sorted && arm !== 'climb') tasks = tasks.slice().sort((a, b) => TIER[a.tier] - TIER[b.tier]);
+  if (limit) tasks = tasks.slice(0, limit);
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('climb-dev-' + key) || '[]'); } catch { saved = []; }
+  S.now = { key, done: saved.length, of: tasks.length };
+  S.runs[key] = { state: 'running' };
+  S.partial[key] = saved.slice();
+  try {
+    const got = await L.run(tasks, arm, call, { depth, maxTokens, done: saved, onDone: (rec) => { S.now.done++; S.partial[key].push(rec); try { localStorage.setItem('climb-dev-' + key, JSON.stringify(S.partial[key])); } catch { /* full: the run goes on unsaved */ } } });
+    S.runs[key] = { state: 'done', arm, model: S.model, tasks, ...got };
+  } catch (e) { S.runs[key] = { state: 'error', e: String(e && e.stack || e) }; }
+  return S.runs[key];
+}
+window.__dev = { S, load, ask, run, T, L };
+out('loading');
+load().catch((e) => { S.state = 'error: ' + String(e); out(S.state); });
+</script>
+</body></html>

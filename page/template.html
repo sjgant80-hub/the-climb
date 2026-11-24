@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Climb — a small AI fails first, then checks its way to the answer</title>
+<meta name="description" content="A small AI model runs in your browser tab, fails a calculation at the first try, and climbs to the right answer pass by pass, because a checker that is not the model keeps its true steps and drops its false ones. Measured on sealed problems, failures kept, re-runnable on your own machine.">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--series:#0f8a6c;--series2:#b0562f;--series3:#5b6ad0;--bg:#f7f6f2;--panel:#ffffff;--ink:#1d1f23;--muted:#5d636d;--line:#dcd9d0;--accent:#1f6f5c;--accent-ink:#ffffff;--ok:#1d7a46;--ok-bg:#e3f3e9;--no:#a33a2c;--no-bg:#f8e5e1;--warn:#8a5a00;--warn-bg:#fbf0d9;--code:#f0eee8;--chip:#ecebe5;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}}
+:root[data-theme="dark"]{--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 16px env(safe-area-inset-bottom,0)}
+main{max-width:980px;margin:0 auto;padding-block:8px 64px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -16px;padding:8px 16px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--ink);text-decoration:none;font-size:14px;padding:4px 8px;border-radius:6px}
+nav a:hover{background:var(--chip)}
+nav .brand{font-weight:700;margin-right:6px}
+nav button{margin-left:auto}
+h1{font-size:clamp(26px,5vw,40px);line-height:1.15;margin:28px 0 12px}
+h2{font-size:clamp(21px,3.4vw,27px);margin:48px 0 10px;scroll-margin-top:64px}
+h3{font-size:18px;margin:22px 0 8px}
+p{margin:0 0 12px}
+a{color:var(--accent)}
+.lead{font-size:18px;max-width:780px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{background:var(--chip);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip b{font-variant-numeric:tabular-nums}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.grid{display:grid;gap:12px}
+.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.three{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+ol.steps{padding-left:22px}
+ol.steps li{margin:0 0 14px}
+code,pre,textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+code{background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{background:var(--code);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+textarea{width:100%;min-height:120px;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+input[type=number],input[type=text],select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;max-width:100%}
+input[type=text]{width:100%}
+label{font-size:14px}
+button{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:7px 12px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.verdict{border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:600}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)}
+.verdict.no{background:var(--no-bg);color:var(--no)}
+.verdict.wait{background:var(--warn-bg);color:var(--warn)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pass{color:var(--ok);font-weight:700}.fail{color:var(--no);font-weight:700}.pend{color:var(--warn);font-weight:700}
+.badge{display:inline-block;border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;white-space:nowrap}
+mark{background:var(--ok-bg);color:var(--ok);padding:0 2px;border-radius:3px;font-weight:700}
+pre.live{min-height:38px;border-left:3px solid var(--accent)}
+.desk{margin:0}
+#viewBar button{margin-left:6px;padding:3px 8px}
+details.card>summary{font-weight:600}
+.stage{border-left:3px solid var(--line);padding:4px 0 4px 12px;margin:8px 0}
+.stage.ok{border-color:var(--ok)}.stage.no{border-color:var(--no)}
+.bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+svg text{fill:var(--ink);font:13px system-ui,sans-serif}
+svg .muted{fill:var(--muted)}
+.diagram{width:100%;height:auto;max-width:900px}
+.kpi{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;font-weight:600}
+footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted)}
+@media (max-width:640px){nav{position:static}nav a{font-size:13px;padding:3px 5px}.kpi{font-size:22px}h2{scroll-margin-top:8px}}
+</style>
+</head>
+<body>
+<nav aria-label="Sections">
+  <a class="brand" href="#top">The Climb</a>
+  <a href="#live">Watch it</a><a href="#start">Start here</a><a href="#results">Results</a><a href="#wall">The wall</a><a href="#claims">Claims</a><a href="#how">How it works</a>
+  <a href="#blueprint">Blueprint</a><a href="#adopt">Adoption</a><a href="#brochure">For buyers</a><a href="#paper">White paper</a>
+  <button class="ghost" id="theme" type="button" aria-label="Switch light or dark">Theme</button>
+</nav>
+<main id="top">
+<h1>A small AI fails first, then checks its way to the answer</h1>
+<p class="lead">The Climb is a web page that runs a small AI model on your own computer and shows it working a calculation it gets wrong at the first try. A checker that is not the model reads every line it writes. A step that is true is kept and crossed off the calculation. A step that is false is dropped, and split into smaller steps. What is left to do goes back to the model, so every pass starts from a smaller problem than the last, until the checker says the answer is right, or until it is clear this problem is beyond it. Both endings are shown.</p>
+<p>A calculator gets these sums right at once. That is not the point. The point is the pattern: a small model that cannot do a job in one go, made to finish it by something outside it that can say "this step is right, that one is not". The same pattern fits any work where a step can be checked by code. Everything here was measured on tasks sealed before the run, the failures are kept, and you can run all of it again on your own machine.</p>
+<p><b>What was measured:</b> <span data-bind="hl.result">not measured yet</span></p>
+<div class="chips" aria-label="Headline numbers">
+  <span class="chip">right at the first try <b data-bind="hl.cold">not measured yet</b></span>
+  <span class="chip">right after the climb <b data-bind="hl.climb">not measured yet</b></span>
+  <span class="chip">told only "not right", same number of tries <b data-bind="hl.retry">not measured yet</b></span>
+  <span class="chip">re-reading its own work, no checker <b data-bind="hl.naive">not measured yet</b></span>
+  <span class="chip">problems the climb did not reach <b data-bind="hl.wall">not measured yet</b></span>
+  <span class="chip">model calls, climb against one try <b data-bind="hl.cost">not measured yet</b></span>
+  <span class="chip">data sent off the device <b data-bind="hl.privacy">not measured yet</b></span>
+  <span class="chip">charge per problem <b>$0</b> <span class="muted">(one model download, then your own hardware)</span></span>
+</div>
+<p class="small muted" data-bind="hl.note">not measured yet</p>
+<div id="viewBar" class="card small" aria-live="polite">not measured yet</div>
+
+<h2 id="live">Watch one climb</h2>
+<p>Press the button, or press Enter. The model runs in this tab on your own graphics chip. The first time, it downloads once (about 880 MB) and is kept by your browser. Below is a climb recorded on the machine named under it. Once you run one, it is replaced by yours, whatever yours does.</p>
+<div class="card">
+  <div class="row"><label for="which">Problem</label><select id="which"></select><button id="watch" type="button">Watch it climb</button><span class="small muted" id="watchOut" aria-live="polite"></span></div>
+  <div id="glass">not measured yet</div>
+</div>
+
+<h2 id="start">Start here</h2>
+<ol class="steps">
+  <li><b>Check this device.</b> <span id="device" aria-live="polite">Checking…</span></li>
+  <li><b>Load the model.</b> <div class="row"><label for="model">Model</label><select id="model"></select><button id="load" type="button">Load the model</button></div>
+    <div class="bar" aria-hidden="true"><i id="loadBar"></i></div><div id="loadOut" class="small" aria-live="polite">Nothing is downloaded until you press the button.</div></li>
+  <li><b>Watch one climb.</b> Use the panel above. Each pass shows what the model wrote, which lines the checker kept and dropped, and what the checker said back.</li>
+  <li><b>Try a calculation of your own.</b> Type any sum with numbers, + - × ÷ and brackets. The checker works out the right answer exactly; the model has to earn it.
+    <div class="row"><input type="text" id="ownIn" value="(37 × 48 + 912) × 6" aria-label="Your calculation"><button id="ownGo" type="button">Climb it</button></div><div id="ownOut" aria-live="polite"></div></li>
+  <li><b>Run the measurement yourself.</b> This runs every problem through all four loops on this device and fills this whole page with your own numbers. It saves as it goes, so you can close the tab and carry on later.
+    <div class="row"><label for="runWhich">Set</label><select id="runWhich"><option value="sample">Sample: 8 problems, a few minutes</option><option value="dev">Dev: the 40 problems the build was tuned on</option><option value="sealed">Sealed: the 96 problems the claims are judged on</option></select><button id="run" type="button">Run it</button><button class="ghost" id="save" type="button" disabled>Save my results</button></div>
+    <div class="bar" aria-hidden="true"><i id="runBar"></i></div><div id="runOut" class="small" aria-live="polite"></div></li>
+  <li><b>Check the published runs.</b> Every published run holds every reply the model gave. This button hands those replies back to the code on this page, with no model, and counts how many decisions come out the same.
+    <div class="row"><button id="rejudge" type="button">Re-judge the published runs</button></div><div id="rejudgeOut" class="small" aria-live="polite"></div></li>
+  <li><b>Measure what the GPU reuses.</b> A problem's passes are one growing conversation, so the browser can keep what it worked out for the earlier turns. This times the same passes both ways on this device.
+    <div class="row"><button id="kv" type="button">Measure the reuse here</button></div><div id="kvOut" class="small" aria-live="polite"></div></li>
+</ol>
+
+<h2 id="results">Results</h2>
+<p>Four loops ran the same sealed problems on the same model. <b>One try</b>: the model, cold, once. <b>Retry</b>: told only "that answer is not right", up to the same number of passes. <b>Naive</b>: asked to re-read and correct its own work, with nothing checking it. <b>The climb</b>: every line ruled on, wrong steps split, kept steps remembered. The chart shows the share of problems with a right answer after each pass.</p>
+<div id="curve">not measured yet</div>
+<h3>Loop by loop</h3>
+<div class="tbl" id="arms">not measured yet</div>
+<h3>By kind of problem</h3>
+<p class="small">The problems were sorted into three tiers before anything was measured: easy (expected right at the first try), climb (expected wrong first, reachable with checked steps) and wall (expected out of reach). The tiers are predictions, and this table shows where they were wrong.</p>
+<div class="tbl" id="tiers">not measured yet</div>
+<h3>Each part's own number</h3>
+<div class="tbl" id="parts">not measured yet</div>
+
+<h2 id="wall">The wall</h2>
+<p>These are the problems the climb did not reach, in red, with where each one stopped. They are here because a climb that always wins is the one not to believe. Some have nothing to climb by: finding two primes from their product gives no partial credit, so there is no step to keep. Others can be split, and the model still could not hold the pieces together within the passes allowed.</p>
+<div class="tbl" id="wallList">not measured yet</div>
+
+<h2 id="claims">The claims, registered before the run</h2>
+<p>Every claim and its bar was committed before the model saw a sealed problem: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">CLAIMS.md</a>. The code and settings were frozen by hash before the run: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/SEAL.md">SEAL.md</a>. The verdicts are worked out on this page from the recorded runs. A claim that failed stays here, failed, in red.</p>
+<div class="tbl" id="claimsTable">not measured yet</div>
+
+<h2 id="how">How it works</h2>
+<p>One pass has four beats. They repeat until the answer is right or the climb stops.</p>
+<svg class="diagram" viewBox="0 0 900 250" role="img" aria-labelledby="beatTitle"><title id="beatTitle">Try, check, remember, reuse: the model writes working, the checker keeps true lines and drops false ones, kept lines go into the memory, and the next pass starts from what was kept</title>
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--muted)"/></marker></defs>
+  <g fill="none" stroke="var(--line)" stroke-width="2"><rect x="20" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="250" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="480" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="710" y="60" width="170" height="70" rx="10" fill="var(--panel)"/>
+  <path d="M200 95h50M430 95h50M660 95h50" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <path d="M795 130v60a10 10 0 0 1-10 10H120a10 10 0 0 1-10-10v-60" stroke="var(--muted)" marker-end="url(#ar)"/><path d="M340 60V32" stroke="var(--ok)"/></g>
+  <text x="110" y="90" text-anchor="middle">1 · Try</text><text x="110" y="112" text-anchor="middle" class="muted">the model writes working</text>
+  <text x="340" y="90" text-anchor="middle">2 · Check</text><text x="340" y="112" text-anchor="middle" class="muted">code: keep or drop each step</text>
+  <text x="570" y="90" text-anchor="middle">3 · Remember</text><text x="570" y="112" text-anchor="middle" class="muted">true steps go in the memory</text>
+  <text x="795" y="90" text-anchor="middle">4 · Reuse</text><text x="795" y="112" text-anchor="middle" class="muted">the GPU keeps earlier turns</text>
+  <text x="340" y="24" text-anchor="middle" fill="var(--ok)">answer right: home, stop</text>
+  <text x="450" y="224" text-anchor="middle" class="muted">not home: what is left to do goes back in, with wrong steps split, and the next pass starts from a smaller problem</text>
+</svg>
+<ol class="steps">
+  <li><b>Try.</b> The model is asked to write its working one small step per line, as <code>working = number</code>, and to end with <code>ANSWER: number</code>. It is the only part that guesses.</li>
+  <li><b>Check.</b> The checker is code. It reads each line, works the left side out exactly with whole-number fractions, and compares. True: kept. False: dropped. It never says what the right number would have been. It rules on the final answer the same way. The checker also holds the calculation the problem asks for. Each true line that is a step of it is crossed off with the value the model wrote, and a false step is replaced by smaller steps made from its own numbers: <code>144 × 45</code> becomes <code>144 × 40 + 144 × 5</code>. What remains is sent back as <b>Left to do</b>, so every pass starts from a smaller problem than the last. A true line that is no part of the calculation is not called right, and a smaller step that is dropped is split again.</li>
+  <li><b>Remember.</b> A kept step is written once into a memory with twelve chambers, placed by its digits so that steps about the same numbers sit together. Before the model is asked, the memory is asked for every step the problem has to do. A step it holds is crossed off there and then, and named to the model as already checked. Only checked steps ever go in.</li>
+  <li><b>Reuse.</b> A problem's passes are one growing conversation. The browser keeps what it computed for the earlier turns, so a later pass only reads the new part. The saving is measured, not assumed.</li>
+</ol>
+<p><b>Why not just let the model re-read its own work?</b> That is the "naive" loop in the results. Nothing outside the model tells it which line is wrong, so it can change a right answer into a wrong one as easily as the other way. The climb differs in one thing only: something that is not the model rules on every step.</p>
+<h3>One real climb, pass by pass</h3>
+<p class="small muted">Taken from the published run as recorded, and decided again by the code on this page.</p>
+<div id="trace">not measured yet</div>
+
+<h2 id="blueprint">Blueprint</h2>
+<div class="tbl"><table><thead><tr><th>part</th><th>what it is</th><th>status</th></tr></thead><tbody>
+<tr><td>The model</td><td>Llama 3.2 1B Instruct at 4 bits, run by WebLLM 0.2.79 on WebGPU, always picking its likeliest word, so a run can be repeated.</td><td class="pass">built, measured</td></tr>
+<tr><td>Exact arithmetic</td><td>Every number is a fraction of two whole numbers, so nothing is rounded and "equal" means equal (<code>src/exact.mjs</code>).</td><td data-bind="bp.exact">not measured yet</td></tr>
+<tr><td>The checker</td><td>Reads each line of a reply as a claim, keeps the true ones, drops the false ones, and rules on the answer. Three kinds of finish line: an exact value, two factors that multiply to a number, a value that satisfies an equation (<code>src/checker.mjs</code>).</td><td data-bind="bp.checker">not measured yet</td></tr>
+<tr><td>The planner</td><td>Splits a dropped step into smaller steps by place value, and a carry into a step of its own. A split never contains a result (<code>src/plan.mjs</code>).</td><td data-bind="bp.plan">not measured yet</td></tr>
+<tr><td>What is left</td><td>Holds the calculation a problem asks for, crosses off each step the model gets right, and puts a split in place of a wrong step. Every change is accepted only if what is left still has the exact value it started with (<code>src/left.mjs</code>).</td><td data-bind="bp.left">not measured yet</td></tr>
+<tr><td>The memory</td><td>The estate's own twelve-chamber memory kernel, taken from the estate-nest repository with its code unchanged (<code>vendor/memory.mjs</code>), with an exact list beside it used only to measure what the map finds (<code>src/keep.mjs</code>).</td><td data-bind="bp.memory">not measured yet</td></tr>
+<tr><td>The loops</td><td>The climb, and the two plainer loops it is measured against: retry and naive (<code>src/loop.mjs</code>).</td><td data-bind="bp.loop">not measured yet</td></tr>
+<tr><td>The problems</td><td>Made by code in sheets of eight that share one setting's numbers, each with its finish line worked out when it is made (<code>src/tasks.mjs</code>).</td><td data-bind="bp.tasks">not measured yet</td></tr>
+<tr><td>Scores and claims</td><td>Every number and every verdict on this page (<code>src/score.mjs</code>, <code>src/claims.mjs</code>).</td><td data-bind="bp.score">not measured yet</td></tr>
+<tr><td>GPU reuse</td><td>WebLLM keeps its work for a conversation that continues. The loops are written as one growing conversation so that it can. Measured on this page.</td><td data-bind="bp.reuse">not measured yet</td></tr>
+</tbody></table></div>
+<p class="small">Each part marked "gated" has been through a mutation gate: a tool changes the code in small ways, one at a time, and the tests must notice every change. The counts are read from <a href="data/gates.json">the gate record</a>, which the repository's own checks re-run on every push.</p>
+
+<h2 id="adopt">Adoption: what this does for your business</h2>
+<div class="grid two">
+<div class="card"><h3>Where it fits</h3><p>Work with several steps where each step can be checked by code, and where a wrong result costs more than a slow one. Reconciling a ledger line by line. Filling a form whose fields must add up. Converting units through a chain. Generating code that has to pass tests. In each, the checking code already exists or is cheap to write. What this pattern adds is the loop around it: keep what passed, split what failed, try again from there.</p></div>
+<div class="card"><h3>Where it does not</h3><p>Work with no checker. If nothing outside the model can say whether a step is right, there is nothing to keep and nothing to drop, and this page's own "naive" loop shows what is left. Judgement calls, open questions and anything creative are out. So are problems with no partial credit: see <a href="#wall">the wall</a>.</p></div>
+</div>
+<h3>Rolling it out</h3>
+<ol>
+  <li>Pick one multi-step job where you already have, or can write, a check for each step.</li>
+  <li>Write that check as code. It must never be a model, and it must never hand the model the right value.</li>
+  <li>Run the job one try only, on your own cases, and count how often it finishes. That is your baseline.</li>
+  <li>Run it with the loop: check each step, keep, split, retry. Count again, and count the extra model calls.</li>
+  <li>Keep the cases it never finishes. They tell you where a person, or a bigger model, is still needed.</li>
+</ol>
+
+<h2 id="brochure">For buyers: the case, without hedging</h2>
+<div class="grid two">
+<div class="card"><h3>What it is</h3><p>A measured demonstration that a small model on ordinary hardware can be made to finish multi-step work it fails at cold, when every step is checked by code. <span data-bind="b.what">The lift is not measured yet.</span></p></div>
+<div class="card"><h3>What it is not</h3><p>It is not a calculator and it is not a general assistant. It does not make the model smarter. It makes the model's mistakes visible one step at a time and gives it another go at the wrong step only. <span data-bind="b.not">The limits are not measured yet.</span></p></div>
+<div class="card"><h3>Chief executive</h3><p>The question to ask of any AI system is what happens when it is wrong. Here a wrong step is caught by code before it reaches an answer, and the system either gets there or says it did not. Both are counted on this page.</p></div>
+<div class="card"><h3>Finance</h3><p>The price of the climb is model calls. <span data-bind="b.cost">The cost is not measured yet.</span> On your own hardware those calls cost electricity, not tokens. The table below prices the same tokens at cloud rates so you can see what the loop would cost if you bought it by the token.</p></div>
+<div class="card"><h3>Operations</h3><p>Every pass is recorded: what the model wrote, which lines were kept and dropped, what the checker said back. A problem that does not finish is handed to a person with that record, so they start from the kept steps and not from nothing.</p></div>
+<div class="card"><h3>Technology and security</h3><p>No server, no account, no API key. The model and the checker run in the browser tab. <span data-bind="b.req">The network-request count is not measured yet.</span> The model files come from the public WebLLM model library and are cached by the browser; their hashes are not pinned by this page, which is a limit stated here plainly.</p></div>
+</div>
+<h3>What the loop costs</h3>
+<div class="tbl" id="money">not measured yet</div>
+<h3>Security, compliance and data protection</h3>
+<ul>
+  <li><b>Where your data goes.</b> Nowhere. A problem you type is handled in the tab. The page makes no request while it works; the count is measured by the browser and shown above.</li>
+  <li><b>What is downloaded.</b> This page, the WebLLM library, and the model weights, once. After that it works offline.</li>
+  <li><b>What is kept.</b> Your own runs are saved in your browser's local storage on this device so a long run can resume. Clearing site data removes them. Nothing is sent anywhere.</li>
+  <li><b>Audit trail.</b> A saved run holds every model reply and every ruling, and can be decided again by the code with no model: step 6 does that for the published runs.</li>
+  <li><b>Licence and ownership.</b> MIT licence. You can run it, change it and ship it. The model has its own licence from its publisher.</li>
+</ul>
+<h3>Deployment, support and ownership</h3>
+<p>It is one HTML file and its data. Host it on any static web server, or open it from disk. Supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a>. Support is agreed per deployment, in each deployment's agreement. To put the pattern around your own job, the work is writing your checker; the loop, the memory and the page are here.</p>
+<h3>Risks, answered straight</h3>
+<ul>
+  <li><b>"It is only arithmetic."</b> Yes. Arithmetic was chosen because the finish line cannot be argued with. The pattern carries to any job with a step checker, and nothing here measures such a job. That would be your test to run.</li>
+  <li><b>"The checker knows the answer, so it could just give it."</b> It could. It does not: it says right or wrong for a line the model wrote, splits a wrong step, and shows what is left to do. Every value it crosses off is one the model wrote. You can read every message it sent in any recorded climb.</li>
+  <li><b>"The checker holds the calculation. Is that not most of the work?"</b> It is real help, and it is the point. The checker knows what the problem asks for and keeps the books: what is done, what is left. The model still has to do every step. The retry loop is the same model with the same number of tries and none of that help, and the gap between the two is what the books are worth. For your own job this is the part you write: the steps the job needs, as code that can tell when each is done.</li>
+  <li><b>"More tries would have got there anyway."</b> That is what the retry loop measures: the same number of tries, told only "not right". <span data-bind="b.retry">The comparison is not measured yet.</span></li>
+  <li><b>"It costs more compute."</b> Yes. <span data-bind="b.cost2">The cost is not measured yet.</span></li>
+  <li><b>"Some problems never finish."</b> Yes. <span data-bind="b.wall">The count is not measured yet.</span> They are listed under <a href="#wall">the wall</a>.</li>
+  <li><b>"Not every laptop has WebGPU."</b> Step 1 checks this. Without it the model cannot run here, but the published runs can still be re-judged here.</li>
+</ul>
+<h3>The case for the board</h3>
+<p>Most of the cost of AI in real work is the wrong answer nobody noticed. This shows one way to stop it at the step where it happens, on hardware you already own, with the result measured in public and the failures left in. <span data-bind="b.board">The result is not measured yet.</span> Start with one job that has a checker, and decide on your own numbers.</p>
+<div id="walk">not measured yet</div>
+
+<h2 id="paper">White paper: checked depth</h2>
+<p><b>The problem.</b> A language model can be asked to look at its own answer and improve it. Left alone, this helps less than it sounds. The model has no way to know which part was wrong, so a second look is as likely to break a right step as to fix a wrong one, and by the fifth pass it is mostly reading its own mistakes back.</p>
+<p><b>The idea.</b> Put something outside the model that can rule on a step. Then each pass can stand on what the last pass got right. The steps that were checked are never in doubt again; only the wrong ones are worked again, in smaller pieces. Depth then adds up instead of washing out.</p>
+<p><b>What this page tests.</b> Whether that is true for a small model on real hardware, by how much, and at what cost. It runs the same problems four ways and reports all four. It also tests the stronger version of the idea, that each pass should shrink what is left as fast as squaring does, and reports whether it held.</p>
+<p><b>What it does not show.</b> That the model learned anything. The model at the last pass is the model at the first. What changed is what it was standing on.</p>
+<p><b>The one rule.</b> A number is on this page only because the checker or the clock measured it in a recorded run. Nothing here was written down first and hoped for. Where a prediction was wrong, the prediction and the measurement are both shown.</p>
+<p class="small muted" data-bind="paper.sources">not measured yet</p>
+<footer>
+  <p>The Climb · built by Kar · MIT licence (holder Simon Gant) · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a> ·
+  <a href="https://github.com/sjgant80-hub/the-climb">source</a> · <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">claims</a> · <a href="data/published.json">the published runs</a></p>
+</footer>
+</main>
+<script type="module">
+/*KERNELS*/
+
+/*APP*/
+</script>
+</body>
+</html>

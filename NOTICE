@@ -1,0 +1,11 @@
+The Climb: code under the MIT licence (LICENSE), copyright Simon Gant.
+
+- The problems are made by code in this repository (src/tasks.mjs). No dataset is used, and nothing in a problem
+  describes a real person or company.
+- vendor/memory.mjs is the estate's twelve-chamber memory kernel, from the estate-nest repository
+  (kernel/fall-remember.mjs), with comments removed and no code changed. vendor/stats.mjs is the exact McNemar test
+  from the docdecdemo repository. Both are recorded with their hashes in vendor/PROVENANCE.json.
+- The model is not part of this repository. The page fetches Llama 3.2 1B Instruct (Meta, Llama 3.2 Community Licence)
+  from the MLC project's published build when the viewer presses Load, and runs it with WebLLM 0.2.79 (Apache 2.0).
+- Cloud prices in data/prices.json are read from the publisher's own price page on the date recorded there. They are
+  used only to show what the same tokens would cost if bought by the token.

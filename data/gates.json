@@ -1,0 +1,77 @@
+{
+ "witness": "v0.6",
+ "total": 610,
+ "killed": 601,
+ "clean": true,
+ "files": {
+  "src/sha256.mjs": {
+   "total": 24,
+   "killed": 24,
+   "ignored": 0,
+   "clean": true
+  },
+  "src/exact.mjs": {
+   "total": 98,
+   "killed": 94,
+   "ignored": 4,
+   "clean": true
+  },
+  "src/score.mjs": {
+   "total": 37,
+   "killed": 37,
+   "ignored": 0,
+   "clean": true
+  },
+  "src/keep.mjs": {
+   "total": 20,
+   "killed": 20,
+   "ignored": 0,
+   "clean": true
+  },
+  "genome/cell.mjs": {
+   "total": 15,
+   "killed": 15,
+   "ignored": 0,
+   "clean": true
+  },
+  "src/checker.mjs": {
+   "total": 53,
+   "killed": 51,
+   "ignored": 2,
+   "clean": true
+  },
+  "src/tasks.mjs": {
+   "total": 15,
+   "killed": 15,
+   "ignored": 0,
+   "clean": true
+  },
+  "src/plan.mjs": {
+   "total": 71,
+   "killed": 70,
+   "ignored": 1,
+   "clean": true
+  },
+  "src/left.mjs": {
+   "total": 165,
+   "killed": 164,
+   "ignored": 1,
+   "clean": true
+  },
+  "src/loop.mjs": {
+   "total": 69,
+   "killed": 69,
+   "ignored": 0,
+   "clean": true
+  },
+  "src/claims.mjs": {
+   "total": 43,
+   "killed": 42,
+   "ignored": 1,
+   "clean": true
+  }
+ },
+ "nothingToMutate": {
+  "genome/io.mjs, judge.mjs, lane.mjs, health.mjs, tombstone.mjs": "the estate genome's hook template, byte for byte; gated in estate-genome (template/genome), exercised here by the birth check in CI"
+ }
+}

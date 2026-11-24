@@ -1,0 +1,1 @@
+{"depth":8,"maxTokens":128,"mem":{"k":8,"probes":1},"kvProblems":8,"sets":{"sample":{"seed":20261101,"sheets":1},"dev":{"seed":20261101,"sheets":5},"sealed":{"seed":20261124,"sheets":12}}}
