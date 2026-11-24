@@ -45,5 +45,7 @@ test('a published sealed run was made under this seal; the dev run and the sampl
   if (pub.sealed) { const r = rd(pub.sealed); assert.deepEqual([r.set, r.complete, r.sealSha256], ['sealed', true, seal]); }
   if (pub.dev) { const r = rd(pub.dev); assert.deepEqual([r.set, r.complete], ['dev', true]); }
   const dir = at('data/runs/');
-  if (existsSync(dir)) for (const f of readdirSync(dir).filter((x) => x.endsWith('.json'))) { const r = rd(`data/runs/${f}`); if (r.set === 'sealed') assert.equal(r.sealSha256, seal, `${f} is a sealed run made under another seal`); }
+  if (existsSync(dir)) for (const f of readdirSync(dir).filter((x) => x.endsWith('.json'))) { const r = rd(`data/runs/${f}`); if (r.set === 'sealed' && r.arms !== undefined) assert.equal(r.sealSha256, seal, `${f} is a sealed run made under another seal`); }
+  // a reuse measurement is not a run of the claims: it only says which set's problems it timed
+  if (pub.kv) { const k = rd(pub.kv); assert.equal(k.arms, undefined); assert.ok(Array.isArray(k.pairs) && k.pairs.length > 0); assert.ok(['sealed', 'dev'].includes(k.set)); }
 });

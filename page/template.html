@@ -117,7 +117,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-si
   <li><b>Try a calculation of your own.</b> Type any sum with numbers, + - × ÷ and brackets. The checker works out the right answer exactly; the model has to earn it.
     <div class="row"><input type="text" id="ownIn" value="(37 × 48 + 912) × 6" aria-label="Your calculation"><button id="ownGo" type="button">Climb it</button></div><div id="ownOut" aria-live="polite"></div></li>
   <li><b>Run the measurement yourself.</b> This runs every problem through all four loops on this device and fills this whole page with your own numbers. It saves as it goes, so you can close the tab and carry on later.
-    <div class="row"><label for="runWhich">Set</label><select id="runWhich"><option value="sample">Sample: 8 problems, a few minutes</option><option value="dev">Dev: the 40 problems the build was tuned on</option><option value="sealed">Sealed: the 96 problems the claims are judged on</option></select><button id="run" type="button">Run it</button><button class="ghost" id="save" type="button" disabled>Save my results</button></div>
+    <div class="row"><label for="runWhich">Set</label><select id="runWhich"><option value="sample">Sample: 8 problems, about 15 minutes</option><option value="dev">Dev: the 40 problems the build was tuned on</option><option value="sealed">Sealed: the 96 problems the claims are judged on</option></select><button id="run" type="button">Run it</button><button class="ghost" id="save" type="button" disabled>Save my results</button></div>
     <div class="bar" aria-hidden="true"><i id="runBar"></i></div><div id="runOut" class="small" aria-live="polite"></div></li>
   <li><b>Check the published runs.</b> Every published run holds every reply the model gave. This button hands those replies back to the code on this page, with no model, and counts how many decisions come out the same.
     <div class="row"><button id="rejudge" type="button">Re-judge the published runs</button></div><div id="rejudgeOut" class="small" aria-live="polite"></div></li>
@@ -243,6 +243,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-si
 <footer>
   <p>The Climb · built by Kar · MIT licence (holder Simon Gant) · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a> ·
   <a href="https://github.com/sjgant80-hub/the-climb">source</a> · <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">claims</a> · <a href="data/published.json">the published runs</a></p>
+  <p>Powered by the Konomi architecture, created by Thomas Frumkin.</p>
 </footer>
 </main>
 <script type="module">
