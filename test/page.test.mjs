@@ -96,7 +96,7 @@ test('the page says what it is and how to use it, with no private symbols and no
   const shape = ['to', 'rus'].join('');
   for (const f of ['page/template.html', 'page/app.js', 'README.md', 'CLAIMS.md', 'SEAL.md', 'NOTICE', 'seed.json', ...readdirSync(new URL('src/', root)).map((x) => `src/${x}`), ...readdirSync(new URL('vendor/', root)).filter((x) => x.includes('.')).map((x) => `vendor/${x}`), ...readdirSync(new URL('vendor/house/', root)).map((x) => `vendor/house/${x}`), 'page/house-app.js', ...readdirSync(new URL('scripts/', root)).map((x) => `scripts/${x}`)]) {
     const text = read(f);
-    assert.ok(!/[◊κφ]/.test(text), `${f}: a private symbol`);
+    assert.ok(!/[\u25ca\u03ba\u03c6]/.test(text), `${f}: a private symbol`);
     assert.ok(!text.toLowerCase().includes(shape), `${f}: the private shape-word`);
   }
   assert.ok(/supplied by <a href="https:\/\/www\.ai-nativesolutions\.com">AI Native Solutions<\/a>/.test(tpl));
