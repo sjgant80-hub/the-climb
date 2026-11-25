@@ -1,0 +1,45 @@
+{
+ "v": "buyer-walk/1",
+ "at": "2026-11-25",
+ "model": "qwen2.5:7b on this machine's CPU, through Ollama",
+ "note": "A simulated buyer walk: a local 7B model played four buyers and read this page's text cold, part by part, one buyer at a time (24 readings, plus four earlier single readings). It is a model's first-pass audit, not a customer's opinion. Kar checked every gap it raised against the page and the page at phone width (375 px). The real gaps are below, each with what was changed. Not changed: \"the wall\" in the opening already links to the wall (the reading saw text only); the wide tables already scroll inside their own boxes on a phone; lines that only quoted the footer back.",
+ "personas": [
+  {
+   "who": "The CFO of a 400-person firm",
+   "verdict": "could follow the headline, not the words or the multipliers behind it",
+   "gaps": [
+    { "gap": "\"The naive loop, with nobody checking\": what is the naive loop?", "fix": "a list of the words this page uses now opens Start here: pass, checker, the climb, one try, a retry, the naive loop, the three kinds of problem, the wall, stalled, nothing to climb by, the sealed run, gated" },
+    { "gap": "\"model calls, climb against one try 2.75×\": 2.75 times what?", "fix": "the chip now reads \"model calls the climb makes, against one try: 2.75× as many\"" },
+    { "gap": "\"Home at pass 2\"", "fix": "now \"Right at pass 2\", in the run view and in the list of problems" },
+    { "gap": "\"The saving is measured, not assumed\": which saving?", "fix": "now: the time this saves is measured on this page (step 7 of Start here)" }
+   ]
+  },
+  {
+   "who": "The CTO who also owns security",
+   "verdict": "wanted each measured factor to say what it measures",
+   "gaps": [
+    { "gap": "\"measured: 7.00×\": 7 times what?", "fix": "now \"measured: 7.00× faster to start a reply\"; elsewhere, faster to the first word of a reply" },
+    { "gap": "\"gated 79/80 (1 equivalent, with the reason written down)\": where is the reason?", "fix": "the list of words now says what gated and equivalent mean and names the file the reason is written in (src/witness.baseline.json)" },
+    { "gap": "\"Run step 5 to see your own device's numbers\": step 5 of what?", "fix": "now \"step 5 of Start here (the measurement)\"" }
+   ]
+  },
+  {
+   "who": "The COO who runs the teams that would use it",
+   "verdict": "wanted the wall's reasons in plain words",
+   "gaps": [
+    { "gap": "\"not reached: stalled\" and \"Nothing to climb by\" are cryptic", "fix": "the list now says a problem stalled when the model gave the same reply to the same ruling, and has nothing to climb by when no part of it can be checked on its own" },
+    { "gap": "\"UNVERIFIED HERE\" beside claims reads as if they were never verified", "fix": "now \"NOT RE-RUN ON THIS DEVICE YET\": the claims were verified on the published run, and the column is for the visitor's own run" },
+    { "gap": "\"One pass has four beats\"", "fix": "now \"four steps\"" }
+   ]
+  },
+  {
+   "who": "The owner-manager of a 12-person business, no technical staff",
+   "verdict": "needed the easy, climb and wall labels and the sealed run explained",
+   "gaps": [
+    { "gap": "\"wall\" and \"climb\" labels are not explained", "fix": "the list now says the three kinds were predictions made before anything was measured: easy (expected right at the first try), climb (expected wrong at first, reachable with checked steps), wall (expected out of reach)" },
+    { "gap": "\"sealed problems\", \"sealed set\"", "fix": "the list now says the sealed run is the measurement, on problems the build was never tuned on, made after every file that could change a result was frozen" },
+    { "gap": "the expandable lines in the run view were too small to tap on a phone (22 px tall)", "fix": "they are now at least 28 px tall; nothing on the page scrolls sideways at 375 px" }
+   ]
+  }
+ ]
+}

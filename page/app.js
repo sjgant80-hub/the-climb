@@ -83,7 +83,7 @@ function storyHTML(task, rec, opts) {
   const st = story(task, rec), o = opts || {}, depth = S.data.settings.depth, climb = isClimb(rec);
   const head = `<p class="small muted">${esc(o.label || '')}</p><p><b>${esc(task.statement)}</b></p>`;
   const body = st.map((p) => `<div class="stage ${p.home ? 'ok' : 'no'}"><b>Pass ${p.n} of ${depth}</b>${p.served.length ? ` <span class="small muted">· from the memory: ${esc(p.served.join('; '))}</span>` : ''}${p.n === 1 ? '' : `<details><summary class="small">what the ${climb ? 'checker' : 'page'} said first</summary><pre>${esc(p.before)}</pre></details>`}<div>${linesHTML(p, task, climb)}</div>${climb && p.left !== null && !p.home ? `<div class="small"><b>Left to do:</b> <code>${esc(p.left)}</code></div>` : ''}</div>`).join('');
-  const end = rec.homeAt && rec.arm !== 'naive' ? `<div class="verdict ok">Home at pass ${rec.homeAt}: the checker ruled the answer right.</div>` : rec.arm === 'naive' ? `<div class="verdict ${st[st.length - 1].home ? 'ok' : 'no'}">Nobody was checking. It stopped at pass ${st.length} with ${st[st.length - 1].home ? 'a right' : 'a wrong'} answer.</div>` : `<div class="verdict no">Not reached${rec.stalled ? ': it stalled (the same reply to the same ruling)' : `: ${st.length} passes used`}.</div>`;
+  const end = rec.homeAt && rec.arm !== 'naive' ? `<div class="verdict ok">Right at pass ${rec.homeAt}: the checker ruled the answer right.</div>` : rec.arm === 'naive' ? `<div class="verdict ${st[st.length - 1].home ? 'ok' : 'no'}">Nobody was checking. It stopped at pass ${st.length} with ${st[st.length - 1].home ? 'a right' : 'a wrong'} answer.</div>` : `<div class="verdict no">Not reached${rec.stalled ? ': it stalled (the same reply to the same ruling)' : `: ${st.length} passes used`}.</div>`;
   return head + body + (o.open ? '' : end);
 }
 
@@ -121,7 +121,7 @@ function renderResults(F) {
   parts.push(['Depth multiplier', F.climb && F.retry && F.retry.first > 0 ? `${(F.climb.solved / F.retry.first).toFixed(2)}×` : F.climb && F.retry ? 'one try got none right, so there is no ratio' : NM, 'right after the climb ÷ right at one try']);
   parts.push(['The memory', m ? `${m.facts} checked steps held. It was asked ${m.asks} times for a step a problem had to do; ${m.wanted} of those steps were in it, and the map found ${m.found} (${m.wanted ? pct(m.recall) : 'nothing to find'})` : NM, 'measured against an exact list of everything stored']);
   parts.push(['What the memory changed', F.climb && F['climb-alone'] ? `home: ${F.climb.home} with the memory, ${F['climb-alone'].home} without; passes of the model: ${F.climb.cost.passes} against ${F['climb-alone'].cost.passes}` : NM, 'the same climb with and without memory between problems']);
-  parts.push(['GPU reuse', kv && kv.factor ? `${kv.factor.toFixed(2)}× faster to the first word on ${kv.pairs} later passes (${kv.kept.toFixed(1)} s continuing the conversation, ${kv.fresh.toFixed(1)} s starting from nothing)` : NM, F.kv ? esc(sourceOf(F.kv)) : 'run step 7 to measure it on this device']);
+  parts.push(['GPU reuse', kv && kv.factor ? `${kv.factor.toFixed(2)}× faster to the first word of a reply on ${kv.pairs} later passes (${kv.kept.toFixed(1)} s continuing the conversation, ${kv.fresh.toFixed(1)} s starting from nothing)` : NM, F.kv ? esc(sourceOf(F.kv)) : 'run step 7 to measure it on this device']);
   parts.push(['Cost of depth', F.climb && F.retry ? `${(F.climb.cost.passes / F.retry.tasks).toFixed(2)} model calls per problem for the climb, against 1; ${F.climb.cost.replyTokens} tokens written against ${recordsOf(F.run, 'retry').reduce((a, r) => a + (r.passes[0].reply || 0), 0)}` : NM, 'the price of the lift, in compute']);
   $('parts').innerHTML = `<table><thead><tr><th>part</th><th>measured</th><th>what it is</th></tr></thead><tbody>${parts.map(([a, b, c]) => `<tr><td><b>${a}</b></td><td>${b}</td><td class="small muted">${c}</td></tr>`).join('')}</tbody></table>${m ? mapSVG(m.chambers, `the memory at the end of the run: ${m.facts} kept steps across its twelve chambers`) : ''}`;
   // the wall
@@ -138,7 +138,7 @@ function renderHeadline(F, V) {
   bind('hl.retry', r ? `${pct(r.solved)} <span class="muted">(${r.home} of ${r.tasks})</span>` : NM);
   bind('hl.naive', n ? `${pct(n.solved)} <span class="muted">(${n.home} of ${n.tasks})</span>` : NM);
   bind('hl.wall', c ? `${c.tasks - c.home} of ${c.tasks}` : NM);
-  bind('hl.cost', c && r ? `${(c.cost.passes / r.tasks).toFixed(2)}×` : NM);
+  bind('hl.cost', c && r ? `${(c.cost.passes / r.tasks).toFixed(2)}× as many` : NM);
   bind('hl.privacy', F.run && F.run.privacy ? `${F.run.privacy.requests} requests` : NM);
   const failed = V.filter((v) => v.pass === false), passed = V.filter((v) => v.pass === true), pending = V.filter((v) => v.pass === null && /^pending/.test(v.result));
   bind('hl.result', c && r ? `On ${c.tasks} sealed problems, the model alone got ${pct(r.first)} right at one try. Told only "not right" and given ${F.depth} tries, ${pct(r.solved)}. Left to re-read its own work, ${n ? pct(n.solved) : '(not measured)'}. With every step checked, wrong steps split and kept steps remembered, <b>${pct(c.solved)}</b>. ${c.tasks - c.home} problems were never reached, and they are listed under <a href="#wall">the wall</a>.` : 'The sealed run has not been made yet. The build, the problems and the claims are in place, and the numbers will appear here when it is run.');
@@ -158,7 +158,7 @@ const NAMES = () => CLAIMS.NAMES;
 const badge = (v) => (v.pass === true ? '<span class="pass">PASS</span>' : v.pass === false ? '<span class="fail">FAIL</span>' : /^pending/.test(v.result) ? '<span class="pend">NOT MEASURED YET</span>' : '<span class="muted">reported</span>');
 function renderClaims(VP, VM) {
   const mine = Object.fromEntries((VM || []).map((v) => [v.id, v]));
-  $('claimsTable').innerHTML = `<table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody>${VP.map((v) => `<tr><td><b>${v.id}</b> ${esc(NAMES()[v.id] || '')}</td><td class="small">${esc(CLAIMS.BARS[v.id] || '')}</td><td class="small">${esc(v.result.replace(/^pending: /, 'Not measured yet: '))}</td><td>${badge(v)}</td><td class="small">${mine[v.id] && !/^pending/.test(mine[v.id].result) ? `${badge(mine[v.id])}<br>${esc(mine[v.id].result)}` : '<span class="badge">UNVERIFIED HERE</span>'}</td></tr>`).join('')}</tbody></table>`;
+  $('claimsTable').innerHTML = `<table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody>${VP.map((v) => `<tr><td><b>${v.id}</b> ${esc(NAMES()[v.id] || '')}</td><td class="small">${esc(CLAIMS.BARS[v.id] || '')}</td><td class="small">${esc(v.result.replace(/^pending: /, 'Not measured yet: '))}</td><td>${badge(v)}</td><td class="small">${mine[v.id] && !/^pending/.test(mine[v.id].result) ? `${badge(mine[v.id])}<br>${esc(mine[v.id].result)}` : '<span class="badge">NOT RE-RUN ON THIS DEVICE YET</span>'}</td></tr>`).join('')}</tbody></table>`;
 }
 
 function renderTrace(F) {
@@ -191,7 +191,7 @@ function renderBlueprint(F) {
   const cell = (files) => { const got = files.map((f) => G[f]); if (got.some((g) => !g)) return '<span class="pend">built; its mutation gate is not recorded yet</span>'; const k = got.reduce((a, g) => a + g.killed, 0), n = got.reduce((a, g) => a + g.total, 0), ig = got.reduce((a, g) => a + (g.ignored || 0), 0); return got.every((g) => g.clean === true) ? `<span class="pass">built, gated ${k}/${n}${ig ? ` (${ig} equivalent, with the reason written down)` : ''}</span>` : `<span class="fail">built, gate not clean: ${k}/${n}</span>`; };
   bind('bp.exact', cell(['src/exact.mjs'])); bind('bp.checker', cell(['src/checker.mjs'])); bind('bp.plan', cell(['src/plan.mjs'])); bind('bp.left', cell(['src/left.mjs'])); bind('bp.memory', cell(['src/keep.mjs'])); bind('bp.loop', cell(['src/loop.mjs'])); bind('bp.tasks', cell(['src/tasks.mjs'])); bind('bp.score', cell(['src/score.mjs', 'src/claims.mjs']));
   const kv = F.kv ? SCORE.reuse(F.kv.pairs) : null;
-  bind('bp.reuse', kv && kv.factor ? `<span class="${kv.factor > 1 ? 'pass' : 'fail'}">measured: ${kv.factor.toFixed(2)}×</span>` : '<span class="pend">not measured yet</span>');
+  bind('bp.reuse', kv && kv.factor ? `<span class="${kv.factor > 1 ? 'pass' : 'fail'}">measured: ${kv.factor.toFixed(2)}× faster to start a reply</span>` : '<span class="pend">not measured yet</span>');
 }
 function renderWalk() {
   const w = S.data.walk;
@@ -200,7 +200,7 @@ function renderWalk() {
 function renderViewBar(F) {
   const L = S.local;
   if (S.view === 'mine' && L) $('viewBar').innerHTML = `<b>Showing your run on this device.</b> ${L.set} set, ${ARMS.filter((a) => covers(L, a, F.tasks)).length} of ${ARMS.length} loops complete. ${esc(sourceOf(L))}. <button class="ghost" type="button" data-act="published">Show the published run</button> <button class="ghost" type="button" data-act="discard">Discard my run</button>`;
-  else $('viewBar').innerHTML = `Showing the published sealed run: ${esc(sourceOf(S.data.runs.sealed))}.${L ? ' <button class="ghost" type="button" data-act="mine">Show my run</button>' : ' Run step 5 to see your own device\'s numbers on this page.'}`;
+  else $('viewBar').innerHTML = `Showing the published sealed run: ${esc(sourceOf(S.data.runs.sealed))}.${L ? ' <button class="ghost" type="button" data-act="mine">Show my run</button>' : ' Run step 5 of Start here (the measurement) to see your own device\'s numbers on this page.'}`;
 }
 async function renderAll() {
   const F = view(), FP = facts(S.data.runs.sealed, 'sealed'), VP = CLAIMS.evaluate(FP), VM = S.local && S.local.set === 'sealed' ? CLAIMS.evaluate(facts(S.local, 'sealed')) : null;
@@ -282,7 +282,7 @@ async function sheetLive(tasks, target, out) {
   setBusy(true);
   const depth = S.data.settings.depth, done = [], now = [];
   let n = 0, stats = null;
-  const row = (r, i) => `<details><summary>${r.homeAt ? `<span class="pass">✓ home at pass ${r.homeAt}</span>` : '<span class="fail">✗ not reached</span>'}${r.passes.some((p) => p.served.length) ? ' <span class="small">· handed steps from the memory</span>' : ''} · <span class="small">${esc(tasks[i].statement)}</span></summary>${storyHTML(tasks[i], r, {})}</details>`;
+  const row = (r, i) => `<details><summary>${r.homeAt ? `<span class="pass">✓ right at pass ${r.homeAt}</span>` : '<span class="fail">✗ not reached</span>'}${r.passes.some((p) => p.served.length) ? ' <span class="small">· handed steps from the memory</span>' : ''} · <span class="small">${esc(tasks[i].statement)}</span></summary>${storyHTML(tasks[i], r, {})}</details>`;
   const draw = (liveText) => {
     const cur = tasks[done.length];
     target.innerHTML = `<p class="small"><b>Live on this device.</b> Problem ${Math.min(done.length + 1, tasks.length)} of ${tasks.length} · ${n} model call${n === 1 ? '' : 's'} · ${stats ? stats.facts : 0} checked steps in the memory${stats && stats.wanted ? ` · it was asked for ${stats.wanted} it held and found ${stats.found}` : ''}</p>${done.map(row).join('')}`
@@ -406,7 +406,7 @@ async function kvMeasure() {
   }
   S.kvLocal = out; window.__climbKv = out;
   const r = SCORE.reuse(out.pairs);
-  $('kvOut').innerHTML = r.factor ? `<b>On this device:</b> ${r.factor.toFixed(2)}× faster to the first word when the conversation continues (${r.kept.toFixed(2)} s against ${r.fresh.toFixed(2)} s over ${r.pairs} later passes).` : 'No later pass could be timed here.';
+  $('kvOut').innerHTML = r.factor ? `<b>On this device:</b> ${r.factor.toFixed(2)}× faster to the first word of a reply when the conversation continues (${r.kept.toFixed(2)} s against ${r.fresh.toFixed(2)} s over ${r.pairs} later passes).` : 'No later pass could be timed here.';
   setBusy(false);
 }
 
