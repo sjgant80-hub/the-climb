@@ -94,7 +94,7 @@ test('the page says what it is and how to use it, with no private symbols and no
   for (const h of ['id="live"', 'id="start"', 'id="results"', 'id="wall"', 'id="claims"', 'id="how"', 'id="blueprint"', 'id="adopt"', 'id="brochure"', 'id="paper"']) assert.ok(tpl.includes(h), h);
   // the estate's private vocabulary stays private: none of its symbols or its shape-word is on any public file
   const shape = ['to', 'rus'].join('');
-  for (const f of ['page/template.html', 'page/app.js', 'README.md', 'CLAIMS.md', 'SEAL.md', 'NOTICE', 'seed.json', ...readdirSync(new URL('src/', root)).map((x) => `src/${x}`), ...readdirSync(new URL('vendor/', root)).map((x) => `vendor/${x}`), ...readdirSync(new URL('scripts/', root)).map((x) => `scripts/${x}`)]) {
+  for (const f of ['page/template.html', 'page/app.js', 'README.md', 'CLAIMS.md', 'SEAL.md', 'NOTICE', 'seed.json', ...readdirSync(new URL('src/', root)).map((x) => `src/${x}`), ...readdirSync(new URL('vendor/', root)).filter((x) => x.includes('.')).map((x) => `vendor/${x}`), ...readdirSync(new URL('vendor/house/', root)).map((x) => `vendor/house/${x}`), 'page/house-app.js', ...readdirSync(new URL('scripts/', root)).map((x) => `scripts/${x}`)]) {
     const text = read(f);
     assert.ok(!/[◊κφ]/.test(text), `${f}: a private symbol`);
     assert.ok(!text.toLowerCase().includes(shape), `${f}: the private shape-word`);
@@ -109,7 +109,7 @@ test('no private repository name is in anything this repository ships (checked b
   assert.ok(banned.size >= 50);
   const sha = (s) => createHash('sha256').update(s).digest('hex');
   const files = ['index.html', 'README.md', 'CLAIMS.md', 'SEAL.md', 'NOTICE', 'seed.json', 'sw.js', 'manifest.webmanifest', 'data/published.json', 'data/settings.json', 'data/prices.json'];
-  for (const dir of ['src', 'scripts', 'test', 'page', 'genome', 'vendor', '.github/workflows']) for (const f of readdirSync(new URL(`${dir}/`, root))) files.push(`${dir}/${f}`);
+  for (const dir of ['src', 'scripts', 'test', 'page', 'genome', 'vendor', 'vendor/house', '.github/workflows']) for (const f of readdirSync(new URL(`${dir}/`, root))) if (f.includes('.')) files.push(`${dir}/${f}`);
   const seen = new Set();
   for (const f of files) {
     for (const tok of read(f).toLowerCase().match(/[a-z0-9_]+(?:-[a-z0-9_]*)*/g) || []) {
@@ -129,4 +129,15 @@ test('no two elements of the page share an id', () => {
   for (const m of tpl.matchAll(/\sid="([^"]+)"/g)) seen.set(m[1], (seen.get(m[1]) || 0) + 1);
   assert.deepEqual([...seen].filter(([, n]) => n > 1).map(([id]) => id), []);
   assert.ok(seen.size > 30);
+});
+
+test('the page meets the house standard: the ship gate, and the kit it vendors is the house kit', async () => {
+  const STANDARD = (await import('../vendor/house/standard.mjs')).default, html = read('index.html');
+  const r = STANDARD.check(html);
+  assert.equal(r.pass, true, r.rules.filter((x) => !x.pass).map((x) => `${x.id} ${x.name}: ${x.why}`).join(' | '));
+  assert.ok(r.measured.viewWords <= 1250 && r.measured.longest <= 45, 'no wall of text greets a visitor');
+  // every word the page had before the rebuild is still on it: the old sections sit behind a click, none was dropped
+  for (const id of ['start', 'results', 'wall', 'claims', 'how', 'blueprint', 'adopt', 'brochure', 'paper']) assert.ok(new RegExp(`<details class="honest reveal" id="${id}"`).test(html), `the ${id} section is on the page, folded`);
+  for (const f of ['house.css', 'crystal.js', 'house.js', 'receipts.mjs', 'standard.mjs']) assert.ok(read(`vendor/house/${f}`).length > 500, f);
+  for (const m of read('vendor/house/house.css').matchAll(/url\('([^']+\.woff2)'\)/g)) assert.ok(existsSync(new URL(m[1], root)), `the font ${m[1]} is in the repository`);
 });

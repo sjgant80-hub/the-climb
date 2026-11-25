@@ -9,3 +9,7 @@ The Climb: code under the MIT licence (LICENSE), copyright Simon Gant.
   from the MLC project's published build when the viewer presses Load, and runs it with WebLLM 0.2.79 (Apache 2.0).
 - Cloud prices in data/prices.json are read from the publisher's own price page on the date recorded there. They are
   used only to show what the same tokens would cost if bought by the token.
+- vendor/house/ is the house kit (sjgant80-hub/house-standard), MIT, copyright Simon Gant, byte for byte: the crystal
+  hero, the token sheet, the motion, the receipts reader and the ship gate the page test holds this page to.
+- vendor/fonts/ holds Fraunces, Hanken Grotesk and JetBrains Mono (variable, latin), each under the SIL Open Font
+  Licence 1.1; each folder carries its licence. They are served from this page so that no font host is called.

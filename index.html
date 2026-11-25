@@ -8,85 +8,270 @@
 <meta name="description" content="A small AI model runs in your browser tab, fails a calculation at the first try, and climbs to the right answer pass by pass, because a checker that is not the model keeps its true steps and drops its false ones. Measured on sealed problems, failures kept, re-runnable on your own machine.">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
-:root{--series:#0f8a6c;--series2:#b0562f;--series3:#5b6ad0;--bg:#f7f6f2;--panel:#ffffff;--ink:#1d1f23;--muted:#5d636d;--line:#dcd9d0;--accent:#1f6f5c;--accent-ink:#ffffff;--ok:#1d7a46;--ok-bg:#e3f3e9;--no:#a33a2c;--no-bg:#f8e5e1;--warn:#8a5a00;--warn-bg:#fbf0d9;--code:#f0eee8;--chip:#ecebe5;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}}
-:root[data-theme="dark"]{--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}
+/* house.css — the AI Native house standard: one token sheet, one kit. Every page is built from these and nothing else.
+   HERO · RECEIPTS · THE STACK · THE GLASS · HONEST EXPANDER. The law of the page: the loudest true number leads, every
+   caveat waits behind a click, and no section is prose. Fonts are the house's three faces, served from the page. */
+@font-face{font-family:'Fraunces';src:url('vendor/fonts/fraunces/files/fraunces-latin-full-italic.woff2') format('woff2');font-weight:100 900;font-style:italic;font-display:swap}
+@font-face{font-family:'Fraunces';src:url('vendor/fonts/fraunces/files/fraunces-latin-full-normal.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Hanken Grotesk';src:url('vendor/fonts/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2') format('woff2');font-weight:100 900;font-display:swap}
+@font-face{font-family:'JetBrains Mono';src:url('vendor/fonts/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2');font-weight:100 800;font-display:swap}
+:root{color-scheme:dark;--bg:#02070c;--bg2:#060e18;--panel:#081320;--ink:#e9f2f6;--soft:#aebecb;--muted:#6f8698;--cyan:#49e8c8;--cyan-dim:#1f6a60;--gold:#ffcf6a;--red:#ff6b6b;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.055);--display:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;--gut:max(20px,env(safe-area-inset-left,0px));--gutr:max(20px,env(safe-area-inset-right,0px))}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 16px env(safe-area-inset-bottom,0)}
-main{max-width:980px;margin:0 auto;padding-block:8px 64px}
-nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -16px;padding:8px 16px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
-nav a{color:var(--ink);text-decoration:none;font-size:14px;padding:4px 8px;border-radius:6px}
-nav a:hover{background:var(--chip)}
-nav .brand{font-weight:700;margin-right:6px}
-nav button{margin-left:auto}
-h1{font-size:clamp(26px,5vw,40px);line-height:1.15;margin:28px 0 12px}
-h2{font-size:clamp(21px,3.4vw,27px);margin:48px 0 10px;scroll-margin-top:64px}
-h3{font-size:18px;margin:22px 0 8px}
-p{margin:0 0 12px}
-a{color:var(--accent)}
-.lead{font-size:18px;max-width:780px}
-.muted{color:var(--muted)}
-.small{font-size:14px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
-.chip{background:var(--chip);border-radius:999px;padding:4px 12px;font-size:14px}
-.chip b{font-variant-numeric:tabular-nums}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
-.grid{display:grid;gap:12px}
-.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.three{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-ol.steps{padding-left:22px}
-ol.steps li{margin:0 0 14px}
-code,pre,textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
-code{background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
-pre{background:var(--code);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-textarea{width:100%;min-height:120px;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
-input[type=number],input[type=text],select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;max-width:100%}
-input[type=text]{width:100%}
-label{font-size:14px}
-button{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:7px 12px;cursor:pointer}
-button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-button:disabled{opacity:.5;cursor:not-allowed}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
-.verdict{border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:600}
-.verdict.ok{background:var(--ok-bg);color:var(--ok)}
-.verdict.no{background:var(--no-bg);color:var(--no)}
-.verdict.wait{background:var(--warn-bg);color:var(--warn)}
-.tbl{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pass{color:var(--ok);font-weight:700}.fail{color:var(--no);font-weight:700}.pend{color:var(--warn);font-weight:700}
-.badge{display:inline-block;border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;white-space:nowrap}
-mark{background:var(--ok-bg);color:var(--ok);padding:0 2px;border-radius:3px;font-weight:700}
-pre.live{min-height:38px;border-left:3px solid var(--accent)}
-.desk{margin:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{line-height:1.5;font-size:16px}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:var(--gut);padding-right:var(--gutr)}
+.mono{font-family:var(--mono)}
+em{font-style:italic;font-family:var(--display);font-weight:600}
+code{font:500 .88em var(--mono);color:var(--cyan);overflow-wrap:anywhere}
+.pass{color:var(--cyan)}.fail{color:var(--red)}.pend{color:var(--gold)}.dim{color:var(--muted)}
+
+/* HERO: the crystal behind the headline */
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;overflow:hidden;background:radial-gradient(120% 90% at 70% 18%,#0a1826 0%,var(--bg) 58%)}
+#crystal{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+.hero-shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(2,7,12,.78) 0%,rgba(2,7,12,.34) 46%,rgba(2,7,12,0) 70%),radial-gradient(130% 110% at 50% 42%,transparent 50%,rgba(2,6,12,.7) 100%)}
+.hero .wrap{position:relative;z-index:2;width:100%;padding-block:12vh;pointer-events:none}
+.hero .wrap>*{pointer-events:auto}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(44px,9vw,104px);line-height:.98;letter-spacing:-.02em;margin:18px 0 0;text-wrap:balance;max-width:14ch}
+h1 em{color:var(--cyan)}
+.sub{font-size:clamp(16px,2.3vw,21px);color:var(--soft);max-width:46ch;margin:26px 0 0;line-height:1.55}
+.cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:38px}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13.5px;letter-spacing:.02em;padding:13px 20px;min-height:46px;border-radius:999px;text-decoration:none;transition:.18s ease;white-space:nowrap;cursor:pointer;border:1px solid transparent;background:none;color:var(--ink)}
+.btn.primary{background:var(--cyan);color:#021310;font-weight:700}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px -12px var(--cyan)}
+.btn.ghost{border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn:disabled{opacity:.5;cursor:default;transform:none}
+.facet{position:absolute;z-index:3;left:var(--gut);bottom:22px;font:500 12px/1.5 var(--mono);color:var(--soft);max-width:min(560px,calc(100vw - 40px));min-height:18px;pointer-events:none}
+.facet b{color:var(--ink);font-weight:500}
+
+/* SECTIONS */
+section{position:relative;z-index:2}
+.pad{padding-block:clamp(72px,11vh,140px)}
+.alt{background:linear-gradient(180deg,var(--bg),#040b14);border-top:1px solid var(--line2)}
+.deep{background:var(--bg2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.kline{font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);margin:0 0 20px}
+.claim{font-family:var(--display);font-weight:400;font-size:clamp(30px,5.2vw,58px);line-height:1.05;letter-spacing:-.015em;text-wrap:balance;max-width:20ch;margin:0}
+.claim b{font-weight:600}
+.claim em{color:var(--cyan)}
+.lede{color:var(--soft);font-size:clamp(15px,1.9vw,18px);line-height:1.6;max-width:52ch;margin:26px 0 0}
+.lede b{color:var(--ink);font-weight:600}
+
+/* RECEIPTS: the number is the hero */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:64px;border-top:1px solid var(--line);padding-top:48px}
+.stat .n{font-family:var(--mono);font-weight:700;font-size:clamp(38px,6.6vw,76px);line-height:1;letter-spacing:-.02em;white-space:nowrap}
+.stat .n .was{color:var(--muted)}.stat .n .arrow{color:var(--cyan-dim);padding:0 .12em}.stat .n .now{color:var(--cyan)}.stat .n .bad{color:var(--red)}.stat .n .wait{color:var(--gold)}
+.stat .lab{color:var(--soft);font-size:14px;margin-top:16px;line-height:1.5;max-width:28ch}
+.stat .lab b{color:var(--ink);font-weight:600}
+.src{display:inline-block;font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);text-decoration:none;margin-top:10px;border-bottom:1px dotted var(--muted);padding-bottom:2px}
+.src:hover{color:var(--cyan);border-color:var(--cyan)}
+.wins{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:42px}
+.win{border:1px solid var(--line2);border-radius:16px;padding:26px 22px;background:var(--panel)}
+.win .wn{font-family:var(--mono);font-weight:700;font-size:clamp(26px,3.6vw,42px);color:var(--cyan);letter-spacing:-.02em;line-height:1;white-space:nowrap}
+.win .wn .of{color:var(--muted)}
+.win .wl{color:var(--soft);font-size:13px;margin-top:12px;line-height:1.5}
+
+/* CARDS */
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.acts.two{grid-template-columns:repeat(2,1fr)}
+.act{position:relative;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--panel),#050c15);border:1px solid var(--line2);border-radius:18px;padding:28px 24px 24px;text-decoration:none;transition:.2s ease;overflow:hidden}
+a.act:hover,.act.lift:hover{border-color:var(--cyan);transform:translateY(-4px);box-shadow:0 24px 60px -34px #000}
+.act::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(73,232,200,.10),transparent 60%)}
+.act:hover::before{opacity:1}
+.act .num{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--muted)}
+.act h3{font-family:var(--display);font-weight:500;font-size:26px;letter-spacing:-.01em;margin:14px 0 0}
+.act p{color:var(--soft);font-size:14.5px;line-height:1.55;margin:10px 0 0;flex:1}
+.act .go{font-family:var(--mono);font-size:12.5px;color:var(--cyan);margin-top:18px;display:inline-flex;gap:7px;align-items:center}
+
+/* THE STACK: one line per layer */
+.stack{margin-top:44px;border:1px solid var(--line2);border-radius:18px;overflow:hidden;background:#040b13}
+.srow{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;border-top:1px solid var(--line2);padding:16px 22px;transition:.16s}
+.srow:first-child{border-top:none}
+.srow:hover{background:#08141f}
+.srow .d{font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:.12em}
+.srow .nm{display:flex;gap:6px 14px;align-items:baseline;flex-wrap:wrap;min-width:0}
+.srow .nm b{font-family:var(--display);font-weight:500;font-size:19px}
+.srow .nm span{color:var(--soft);font-size:14px;min-width:0;overflow-wrap:anywhere}
+.srow.red .d{color:var(--red)}.srow.gold .d{color:var(--gold)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.tag.off{color:var(--muted);border:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.spark{display:block;width:100%;max-width:520px;height:64px;margin:12px 0 0}
+.tag.cy{color:var(--cyan);border:1px solid rgba(73,232,200,.32)}
+.tag.gd{color:var(--gold);border:1px solid rgba(255,207,106,.34);animation:breathe 2.4s ease-in-out infinite}
+.tag.rd{color:var(--red);border:1px solid rgba(255,107,107,.4)}
+@keyframes breathe{50%{opacity:.55}}
+
+/* THE GLASS: it runs here, on the visitor's own device */
+.glass{margin-top:44px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#07121d,#040b13);padding:26px 24px;box-shadow:0 30px 80px -50px #000,inset 0 1px 0 rgba(255,255,255,.04)}
+.glass h3{font-family:var(--display);font-weight:500;font-size:24px;margin:0 0 6px}
+.glass .hint{color:var(--soft);font-size:14px;margin:0 0 16px;max-width:60ch}
+.glass .out{font:500 13px/1.6 var(--mono);color:var(--soft);margin:14px 0 0;min-height:22px}
+.glass textarea,.glass input,.glass select{font:500 13px/1.5 var(--mono);color:var(--ink);background:rgba(2,7,12,.75);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:100%;min-height:42px}
+.glass textarea{width:100%;min-height:128px}
+.glass label{font:500 11px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:inline-flex;flex-direction:column;gap:5px}
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.box{border:1px solid var(--line2);border-radius:14px;padding:14px 16px;background:rgba(2,7,12,.5);min-width:0}
+.box h4{font:500 11px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+pre{font:500 12.5px/1.55 var(--mono);color:var(--ink);margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.wall svg{width:100%;height:auto;display:block}
+.wall rect{cursor:pointer;transition:opacity .15s}
+.wall rect:hover{opacity:.7}
+.key{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 0;font:500 11.5px/1.4 var(--mono);color:var(--muted)}
+.key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* PROOF + THE HONEST EXPANDER */
+.proof{text-align:center}
+.proof .hl{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(38px,8vw,88px);line-height:1;letter-spacing:-.02em;margin:0}
+.proof .hl .a{color:var(--muted)}.proof .hl .b{color:var(--cyan)}
+.proof .sub2{color:var(--soft);margin:24px auto 0;max-width:42ch;font-size:16px}
+.links{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+.plink{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:11px 18px;border-radius:999px;transition:.18s;min-height:44px;display:inline-flex;align-items:center}
+.plink:hover{border-color:var(--cyan);color:var(--cyan)}
+details.honest{max-width:680px;margin:22px auto 0;border:1px solid var(--line2);border-radius:14px;background:#040b13;text-align:left}
+details.honest:first-of-type{margin-top:52px}
+details.honest summary{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--muted);padding:16px 20px;cursor:pointer;list-style:none;min-height:48px}
+details.honest summary::-webkit-details-marker{display:none}
+details.honest summary::before{content:"+ ";color:var(--cyan)}
+details.honest[open] summary::before{content:"– "}
+details.honest .in{padding:0 20px 20px;color:var(--soft);font-size:14px;line-height:1.6}
+details.honest .in p{margin:0 0 10px}
+details.honest .in b{color:var(--ink)}
+details.honest .in a{color:var(--cyan)}
+
+footer{border-top:1px solid var(--line2);padding-block:46px;position:relative;z-index:2}
+.frow{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:22px}
+.taglist{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.9;letter-spacing:.02em}
+.taglist span{color:var(--cyan)}
+.fnote{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:14px;letter-spacing:.02em;line-height:1.8}
+.fnote a{color:var(--soft)}
+
+/* MOTION */
+.js .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+.js .reveal.in{opacity:1;transform:none}
+@media(max-width:860px){.acts{grid-template-columns:repeat(2,1fr)}.wins{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.stats{grid-template-columns:1fr;gap:40px}.two{grid-template-columns:1fr}.hero-shade{background:linear-gradient(180deg,rgba(2,7,12,.2) 0%,rgba(2,7,12,.82) 62%)}.hero{align-items:flex-end}.hero .wrap{padding-block:9vh}}
+@media(max-width:680px){.acts,.acts.two{grid-template-columns:1fr}.srow{grid-template-columns:48px minmax(0,1fr);padding:14px 16px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.js .reveal{opacity:1;transform:none;transition:none}.tag.gd{animation:none}.btn,.act{transition:none}}
+/* this build's own styles, for its own content, which now sits behind a click or inside the glass */
+#gem{position:relative;display:block;width:100%;height:min(68vh,560px);touch-action:none;cursor:grab;border-radius:14px;background:#02070c;margin:0 0 16px}
+.legacy{font-size:15px;line-height:1.6;color:var(--ink)}
+.legacy{--series:#0f8a6c;--series2:#b0562f;--series3:#5b6ad0;--bg:#f7f6f2;--panel:#ffffff;--ink:#1d1f23;--muted:#5d636d;--line:#dcd9d0;--accent:#1f6f5c;--accent-ink:#ffffff;--ok:#1d7a46;--ok-bg:#e3f3e9;--no:#a33a2c;--no-bg:#f8e5e1;--warn:#8a5a00;--warn-bg:#fbf0d9;--code:#f0eee8;--chip:#ecebe5;}
+@media (prefers-color-scheme:dark){.legacy :root:not([data-theme="light"]){--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;color-scheme:dark}}
+.legacy{--series:#34a888;--series2:#e08a5e;--series3:#8f9cf0;--bg:#131518;--panel:#1b1e22;--ink:#e8e6e1;--muted:#a3a8b0;--line:#2e3238;--accent:#5cc3a6;--accent-ink:#0e1a16;--ok:#6fd39b;--ok-bg:#16301f;--no:#f08a7a;--no-bg:#3a1c18;--warn:#e0b45c;--warn-bg:#33280f;--code:#23272c;--chip:#262a30;}
+.legacy h2{font-size:clamp(21px,3.4vw,27px);margin:48px 0 10px;scroll-margin-top:64px}
+.legacy h3{font-size:18px;margin:22px 0 8px}
+.legacy p{margin:0 0 12px}
+.legacy a{color:var(--accent)}
+.legacy .lead{font-size:18px;max-width:780px}
+.legacy .muted{color:var(--muted)}
+.legacy .small{font-size:14px}
+.legacy .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.legacy .chip{background:var(--chip);border-radius:999px;padding:4px 12px;font-size:14px}
+.legacy .chip b{font-variant-numeric:tabular-nums}
+.legacy .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.legacy .grid{display:grid;gap:12px}
+.legacy .two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.legacy .three{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.legacy ol.steps{padding-left:22px}
+.legacy ol.steps li{margin:0 0 14px}
+.legacy code,.legacy pre,.legacy textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.legacy code{background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.legacy pre{background:var(--code);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.legacy textarea{width:100%;min-height:120px;background:var(--code);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.legacy input[type=number],.legacy input[type=text],.legacy select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;max-width:100%}
+.legacy input[type=text]{width:100%}
+.legacy label{font-size:14px}
+.legacy button{font:inherit;font-size:14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:7px 12px;cursor:pointer}
+.legacy button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.legacy button:disabled{opacity:.5;cursor:not-allowed}
+.legacy .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.legacy .verdict{border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:600}
+.legacy .verdict.ok{background:var(--ok-bg);color:var(--ok)}
+.legacy .verdict.no{background:var(--no-bg);color:var(--no)}
+.legacy .verdict.wait{background:var(--warn-bg);color:var(--warn)}
+.legacy .tbl{overflow-x:auto}
+.legacy table{border-collapse:collapse;width:100%;font-size:14px}
+.legacy th,.legacy td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.legacy td.num,.legacy th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.legacy .pass{color:var(--ok);font-weight:700}.fail{color:var(--no);font-weight:700}.pend{color:var(--warn);font-weight:700}
+.legacy .badge{display:inline-block;border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;white-space:nowrap}
+.legacy mark{background:var(--ok-bg);color:var(--ok);padding:0 2px;border-radius:3px;font-weight:700}
+.legacy pre.live{min-height:38px;border-left:3px solid var(--accent)}
+.legacy .desk{margin:0}
 #viewBar button{margin-left:6px;padding:3px 8px}
-details.card>summary{font-weight:600}
-.stage{border-left:3px solid var(--line);padding:4px 0 4px 12px;margin:8px 0}
-.stage.ok{border-color:var(--ok)}.stage.no{border-color:var(--no)}
-.bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden;margin:6px 0}
-.bar i{display:block;height:100%;background:var(--accent);width:0}
-svg text{fill:var(--ink);font:13px system-ui,sans-serif}
-svg .muted{fill:var(--muted)}
-.diagram{width:100%;height:auto;max-width:900px}
-.kpi{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
-details{margin:8px 0}
-summary{cursor:pointer;font-weight:600;min-height:28px;padding:3px 0}
-footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted)}
-@media (max-width:640px){nav{position:static}nav a{font-size:13px;padding:3px 5px}.kpi{font-size:22px}h2{scroll-margin-top:8px}}
+.legacy details.card>summary{font-weight:600}
+.legacy .stage{border-left:3px solid var(--line);padding:4px 0 4px 12px;margin:8px 0}
+.legacy .stage.ok{border-color:var(--ok)}.stage.no{border-color:var(--no)}
+.legacy .bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden;margin:6px 0}
+.legacy .bar i{display:block;height:100%;background:var(--accent);width:0}
+.legacy svg text{fill:var(--ink);font:13px system-ui,sans-serif}
+.legacy svg .muted{fill:var(--muted)}
+.legacy .diagram{width:100%;height:auto;max-width:900px}
+.legacy .kpi{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.legacy details{margin:8px 0}
+.legacy summary{cursor:pointer;font-weight:600;min-height:28px;padding:3px 0}
+@media (max-width:640px){.legacy .kpi{font-size:22px}.legacy h2{scroll-margin-top:8px}}
 </style>
 </head>
 <body>
-<nav aria-label="Sections">
-  <a class="brand" href="#top">The Climb</a>
-  <a href="#live">Watch it</a><a href="#start">Start here</a><a href="#results">Results</a><a href="#wall">The wall</a><a href="#claims">Claims</a><a href="#how">How it works</a>
-  <a href="#blueprint">Blueprint</a><a href="#adopt">Adoption</a><a href="#brochure">For buyers</a><a href="#paper">White paper</a>
-  <button class="ghost" id="theme" type="button" aria-label="Switch light or dark">Theme</button>
-</nav>
-<main id="top">
-<h1>A small AI fails first, then checks its way to the answer</h1>
-<p class="lead">The Climb is a web page that runs a small AI model on your own computer and shows it working a calculation it gets wrong at the first try. A checker that is not the model reads every line it writes. A step that is true is kept and crossed off the calculation. A step that is false is dropped, and split into smaller steps. What is left to do goes back to the model, so every pass starts from a smaller problem than the last, until the checker says the answer is right, or until it is clear this problem is beyond it. Both endings are shown.</p>
+<header class="hero" id="top">
+  <canvas id="crystal" role="img" aria-label="A crystal of 32 faces. Each lit face is one of this build's pre-registered claims: cyan when it passed, red when it failed and is kept."></canvas>
+  <div class="hero-shade"></div>
+  <div class="wrap">
+    <p class="eyebrow">AI Native Solutions · The Climb</p>
+    <h1>It <em>climbs.</em></h1>
+    <p class="sub">A problem it fails cold, broken into steps it can do. Each step is checked before the next.</p>
+    <div class="cta"><a class="btn primary" href="#result">See the result →</a><a class="btn ghost" href="#live">Run it yourself</a></div>
+  </div>
+  <p class="facet" id="hsFacet" aria-live="polite">7 of 8 claims passed · 1 failed and kept · point at a face</p>
+</header>
+
+<section class="pad" id="result">
+  <div class="wrap">
+    <p class="kline reveal">The result</p>
+    <h2 class="claim reveal">One try, against the climb. <b>Same model, same weights.</b></h2>
+    <div class="stats" id="hsReceipts"><div class="stat reveal"><div class="n"><span class="was">36.5%</span><span class="arrow">→</span><span class="now">70.8%</span></div><div class="lab"><b>Of 96 sealed problems.</b> Sealed problems right: at one try, then after the climb.</div><a class="src" href="data/runs/sealed.json">receipt: the sealed run ↗</a></div><div class="stat reveal"><div class="n"><span class="now">7</span><span class="was" style="font-size:.42em"> /8</span> <span class="bad" style="font-size:.5em">−1</span></div><div class="lab"><b>Pre-registered claims passed.</b> C8 failed and is kept on the page, in red.</div><a class="src" href="data/runs/sealed.json">receipt: the sealed run ↗</a></div></div>
+  </div>
+</section>
+
+<section class="pad alt" id="verdicts">
+  <div class="wrap">
+    <p class="kline reveal">The claims, written down first</p>
+    <h2 class="claim reveal">The pass marks were fixed <b>before the sealed run.</b></h2>
+    <div class="stack reveal" id="hsClaims"><div class="srow "><div class="d">C1</div><div class="nm"><b>The climb lifts</b><span>one try 36.5%, the climb 70.8%: 34.4 points; 33 problems only the climb got home, 0 only the one try, p = 2.33e-10</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C2</div><div class="nm"><b>Checking is what does it</b><span>retry 44.8%, the climb 70.8%; 26 problems only the climb got home, 1 only the retry loop, p = 4.17e-7</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C3</div><div class="nm"><b>Left alone, it does not climb</b><span>one try 36.5%, naive at its last pass 29.2%: -7.3 points</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C4</div><div class="nm"><b>The memory earns its place</b><span>home: 68 with the memory, 68 without; passes of the model: 264 with, 267 without</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C5</div><div class="nm"><b>Easy is easy</b><span>91.7% of the 24 easy problems right at one try</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C6</div><div class="nm"><b>The climb tier climbs</b><span>27.1% of the 48 climb-tier problems right at one try, 93.8% after the climb: 66.7 points</span><span class="tag cy">pass</span></div></div><div class="srow "><div class="d">C7</div><div class="nm"><b>The wall holds</b><span>0 of the 24 wall problems home after the climb (0.0%)</span><span class="tag cy">pass</span></div></div><div class="srow red"><div class="d">C8</div><div class="nm"><b>Each pass squares what is left</b><span>share not home after each pass: 64.6%, 29.2%, 18.8%, 16.7%, 10.4%, 8.3%, 6.3%, 6.3%; it held at 1 of 7 steps</span><span class="tag rd">fail · kept</span></div></div></div>
+  </div>
+</section>
+
+<section class="pad proof" id="live">
+  <div class="wrap">
+    <h2 class="hl reveal"><span class="a">Don't trust us.</span><br><span class="b">Re-run it.</span></h2>
+    <p class="sub2 reveal">Run the climb on your own graphics chip, or replay the sealed record. Nothing leaves your browser.</p>
+    <div class="glass legacy reveal" style="text-align:left">
+      
+      <div class="card">
+  <div class="row"><label for="which">Problem</label><select id="which"></select><button id="watch" type="button">Watch it climb</button><span class="small muted" id="watchOut" aria-live="polite"></span></div>
+  <div id="glass"><p class="small muted">Recorded, not live: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24 (sealed set, energy:20261124-0).</p><p><b>A 30 kg cart moves at 15 m/s. Kinetic energy = 0.5 × mass × speed × speed. How many joules?</b></p><div class="stage no"><b>Pass 1 of 8</b><div><div><span class="pass">✓</span> 30 × 15 = 450 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 0.5 × 30 = 15 <span class="small muted">true, but not a step of this problem</span></div><div><span class="pass">✓</span> 15 × 15 = 225 <span class="small muted">true, but not a step of this problem</span></div><div><span class="pass">✓</span> 225 × 225 = 50625 <span class="small muted">true, but not a step of this problem</span></div><div><span class="fail">✗</span> ANSWER: 50625 <span class="small fail">not right</span></div></div><div class="small"><b>Left to do:</b> <code>0.5 × 450 × 15</code></div></div><div class="stage ok"><b>Pass 2 of 8</b><details><summary class="small">what the checker said first</summary><pre>Right: 30 × 15 = 450
+Left to do: 0.5 × 450 × 15
+One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 0.5 × 450 = 225 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 225 × 15 = 3375 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> ANSWER: 3375 <span class="small pass">right: home</span></div></div></div><div class="verdict ok">Right at pass 2: the checker ruled the answer right.</div></div>
+</div>
+      <button id="theme" type="button" hidden>Theme</button>
+    </div>
+    
+    <details class="honest reveal"><summary>What this does — and doesn't — claim</summary><div class="in"><p><b>A claim failed, and stays.</b> Not every pre-registered claim passed. The one that did not is in the stack above, in red.</p><p><b>The reach of the check.</b> Exact arithmetic only. Where it cannot check, it gives no answer.</p><p><b>One sealed run.</b> One model, problems made by code.</p></div></details>
+  </div>
+</section>
+
+<section class="pad alt" id="full">
+  <div class="wrap">
+    <p class="kline reveal">Everything, in full</p>
+    <h2 class="claim reveal">Every detail is still here. <b>One click away.</b></h2>
+    <details class="honest reveal" style="max-width:none"><summary>What it is, in one paragraph</summary><div class="in legacy"><p class="lead">The Climb is a web page that runs a small AI model on your own computer and shows it working a calculation it gets wrong at the first try. A checker that is not the model reads every line it writes. A step that is true is kept and crossed off the calculation. A step that is false is dropped, and split into smaller steps. What is left to do goes back to the model, so every pass starts from a smaller problem than the last, until the checker says the answer is right, or until it is clear this problem is beyond it. Both endings are shown.</p>
 <p>A calculator gets these sums right at once. That is not the point. The point is the pattern: a small model that cannot do a job in one go, made to finish it by something outside it that can say "this step is right, that one is not". The same pattern fits any work where a step can be checked by code. Everything here was measured on tasks sealed before the run, the failures are kept, and you can run all of it again on your own machine.</p>
 <p><b>What was measured:</b> <span data-bind="hl.result">On 96 sealed problems, the model alone got 36.5% right at one try. Told only "not right" and given 8 tries, 44.8%. Left to re-read its own work, 29.2%. With every step checked, wrong steps split and kept steps remembered, <b>70.8%</b>. 28 problems were never reached, and they are listed under <a href="#wall">the wall</a>.</span></p>
 <div class="chips" aria-label="Headline numbers">
@@ -97,22 +282,11 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding-top:12px;font-si
   <span class="chip">problems the climb did not reach <b data-bind="hl.wall">28 of 96</b></span>
   <span class="chip">model calls the climb makes, against one try <b data-bind="hl.cost">2.75× as many</b></span>
   <span class="chip">data sent off the device <b data-bind="hl.privacy">0 requests</b></span>
-  <span class="chip">charge per problem <b>$0</b> <span class="muted">(one model download, then your own hardware)</span></span>
 </div>
 <p class="small muted" data-bind="hl.note">Source: the published sealed run (Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24). Of the registered claims, <span class="pass">7 pass</span> (C1, C2, C3, C4, C5, C6, C7) and <span class="fail">1 fail</span> (C8). Every verdict is worked out on this page, and the failures stay.</p>
 <div id="viewBar" class="card small" aria-live="polite">Showing the published sealed run: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24. Run step 5 of Start here (the measurement) to see your own device's numbers on this page.</div>
-
-<h2 id="live">Watch one climb</h2>
-<p>Press the button, or press Enter. The model runs in this tab on your own graphics chip. The first time, it downloads once (about 880 MB) and is kept by your browser. Below is a climb recorded on the machine named under it. Once you run one, it is replaced by yours, whatever yours does.</p>
-<div class="card">
-  <div class="row"><label for="which">Problem</label><select id="which"></select><button id="watch" type="button">Watch it climb</button><span class="small muted" id="watchOut" aria-live="polite"></span></div>
-  <div id="glass"><p class="small muted">Recorded, not live: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24 (sealed set, energy:20261124-0).</p><p><b>A 30 kg cart moves at 15 m/s. Kinetic energy = 0.5 × mass × speed × speed. How many joules?</b></p><div class="stage no"><b>Pass 1 of 8</b><div><div><span class="pass">✓</span> 30 × 15 = 450 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 0.5 × 30 = 15 <span class="small muted">true, but not a step of this problem</span></div><div><span class="pass">✓</span> 15 × 15 = 225 <span class="small muted">true, but not a step of this problem</span></div><div><span class="pass">✓</span> 225 × 225 = 50625 <span class="small muted">true, but not a step of this problem</span></div><div><span class="fail">✗</span> ANSWER: 50625 <span class="small fail">not right</span></div></div><div class="small"><b>Left to do:</b> <code>0.5 × 450 × 15</code></div></div><div class="stage ok"><b>Pass 2 of 8</b><details><summary class="small">what the checker said first</summary><pre>Right: 30 × 15 = 450
-Left to do: 0.5 × 450 × 15
-One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 0.5 × 450 = 225 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 225 × 15 = 3375 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> ANSWER: 3375 <span class="small pass">right: home</span></div></div></div><div class="verdict ok">Right at pass 2: the checker ruled the answer right.</div></div>
-</div>
-
-<h2 id="start">Start here</h2>
-<p><b>The words this page uses.</b> A <b>pass</b> is one reply from the model, working the problem out line by line. The <b>checker</b> is code, not the model: it works each line out exactly, keeps the lines that are true and drops the ones that are false. <b>The climb</b> asks the model again with what was kept, pass after pass, until the answer is right or it stops. It is set against <b>one try</b> (a single reply), <b>a retry</b> (the same number of tries, told only "not right") and <b>the naive loop</b> (the model re-reads its own answer with nothing checking it). Before anything was measured, the problems were sorted into three kinds, as predictions: <b>easy</b> (expected right at the first try), <b>climb</b> (expected wrong at first, reachable with checked steps) and <b>wall</b> (expected out of reach); the page shows where the predictions were wrong. <b>The wall</b> is also the list of problems the climb did not reach: one <b>stalled</b> when the model gave the same reply to the same ruling, and one has <b>nothing to climb by</b> when no part of it can be checked on its own (finding the two primes behind a product gives no partial credit). The <b>sealed run</b> is the measurement, on problems the build was never tuned on, made after every file that could change a result was frozen. "<b>Gated</b>" in the blueprint means a mutation test changed that part's code many ways, one small change at a time, and its tests caught every one; an <b>equivalent</b> change makes no difference to what the code does, and its reason is written down in <code>src/witness.baseline.json</code>.</p>
+<p>Press the button, or press Enter. The model runs in this tab on your own graphics chip. The first time, it downloads once (about 880 MB) and is kept by your browser. Below is a climb recorded on the machine named under it. Once you run one, it is replaced by yours, whatever yours does.</p></div></details>
+    <details class="honest reveal" id="start" style="max-width:none"><summary>Start here</summary><div class="in legacy"><p><b>The words this page uses.</b> A <b>pass</b> is one reply from the model, working the problem out line by line. The <b>checker</b> is code, not the model: it works each line out exactly, keeps the lines that are true and drops the ones that are false. <b>The climb</b> asks the model again with what was kept, pass after pass, until the answer is right or it stops. It is set against <b>one try</b> (a single reply), <b>a retry</b> (the same number of tries, told only "not right") and <b>the naive loop</b> (the model re-reads its own answer with nothing checking it). Before anything was measured, the problems were sorted into three kinds, as predictions: <b>easy</b> (expected right at the first try), <b>climb</b> (expected wrong at first, reachable with checked steps) and <b>wall</b> (expected out of reach); the page shows where the predictions were wrong. <b>The wall</b> is also the list of problems the climb did not reach: one <b>stalled</b> when the model gave the same reply to the same ruling, and one has <b>nothing to climb by</b> when no part of it can be checked on its own (finding the two primes behind a product gives no partial credit). The <b>sealed run</b> is the measurement, on problems the build was never tuned on, made after every file that could change a result was frozen. "<b>Gated</b>" in the blueprint means a mutation test changed that part's code many ways, one small change at a time, and its tests caught every one; an <b>equivalent</b> change makes no difference to what the code does, and its reason is written down in <code>src/witness.baseline.json</code>.</p>
 <ol class="steps">
   <li><b>Check this device.</b> <span id="device" aria-live="polite">Checking…</span></li>
   <li><b>Load the model.</b> <div class="row"><label for="model">Model</label><select id="model"></select><button id="load" type="button">Load the model</button></div>
@@ -127,10 +301,8 @@ One step per line, then ANSWER: number</pre></details><div><div><span class="pas
     <div class="row"><button id="rejudge" type="button">Re-judge the published runs</button></div><div id="rejudgeOut" class="small" aria-live="polite"></div></li>
   <li><b>Measure what the GPU reuses.</b> A problem's passes are one growing conversation, so the browser can keep what it worked out for the earlier turns. This times the same passes both ways on this device.
     <div class="row"><button id="kv" type="button">Measure the reuse here</button></div><div id="kvOut" class="small" aria-live="polite"></div></li>
-</ol>
-
-<h2 id="results">Results</h2>
-<p>Four loops ran the same sealed problems on the same model. <b>One try</b>: the model, cold, once. <b>Retry</b>: told only "that answer is not right", up to the same number of passes. <b>Naive</b>: asked to re-read and correct its own work, with nothing checking it. <b>The climb</b>: every line ruled on, wrong steps split, kept steps remembered. The chart shows the share of problems with a right answer after each pass.</p>
+</ol></div></details>
+    <details class="honest reveal" id="results" style="max-width:none"><summary>Results</summary><div class="in legacy"><p>Four loops ran the same sealed problems on the same model. <b>One try</b>: the model, cold, once. <b>Retry</b>: told only "that answer is not right", up to the same number of passes. <b>Naive</b>: asked to re-read and correct its own work, with nothing checking it. <b>The climb</b>: every line ruled on, wrong steps split, kept steps remembered. The chart shows the share of problems with a right answer after each pass.</p>
 <div id="curve"><svg class="diagram" viewBox="0 0 640 280" role="img" aria-label="Share of problems with a right answer after each pass, for each loop"><line x1="44" x2="490" y1="244" y2="244" stroke="var(--line)"/><text x="38" y="248" text-anchor="end" class="muted">0%</text><line x1="44" x2="490" y1="186.5" y2="186.5" stroke="var(--line)"/><text x="38" y="190.5" text-anchor="end" class="muted">25%</text><line x1="44" x2="490" y1="129" y2="129" stroke="var(--line)"/><text x="38" y="133" text-anchor="end" class="muted">50%</text><line x1="44" x2="490" y1="71.5" y2="71.5" stroke="var(--line)"/><text x="38" y="75.5" text-anchor="end" class="muted">75%</text><line x1="44" x2="490" y1="14" y2="14" stroke="var(--line)"/><text x="38" y="18" text-anchor="end" class="muted">100%</text><text x="44" y="260" text-anchor="middle" class="muted">1</text><text x="107.71428571428571" y="260" text-anchor="middle" class="muted">2</text><text x="171.42857142857142" y="260" text-anchor="middle" class="muted">3</text><text x="235.14285714285714" y="260" text-anchor="middle" class="muted">4</text><text x="298.85714285714283" y="260" text-anchor="middle" class="muted">5</text><text x="362.57142857142856" y="260" text-anchor="middle" class="muted">6</text><text x="426.2857142857143" y="260" text-anchor="middle" class="muted">7</text><text x="490" y="260" text-anchor="middle" class="muted">8</text><polyline fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 4" points="44.0,160.1 107.7,160.1 171.4,160.1 235.1,160.1 298.9,160.1 362.6,160.1 426.3,160.1 490.0,160.1"/><circle cx="44.0" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="107.7" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="171.4" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="235.1" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="298.9" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="362.6" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="426.3" cy="160.1" r="2.5" fill="var(--muted)"/><circle cx="490.0" cy="160.1" r="2.5" fill="var(--muted)"/><polyline fill="none" stroke="var(--series2)" stroke-width="2"  points="44.0,160.1 107.7,141.0 171.4,141.0 235.1,141.0 298.9,141.0 362.6,141.0 426.3,141.0 490.0,141.0"/><circle cx="44.0" cy="160.1" r="2.5" fill="var(--series2)"/><circle cx="107.7" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="171.4" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="235.1" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="298.9" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="362.6" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="426.3" cy="141.0" r="2.5" fill="var(--series2)"/><circle cx="490.0" cy="141.0" r="2.5" fill="var(--series2)"/><polyline fill="none" stroke="var(--series3)" stroke-width="2"  points="44.0,160.1 107.7,167.3 171.4,176.9 235.1,174.5 298.9,176.9 362.6,176.9 426.3,176.9 490.0,176.9"/><circle cx="44.0" cy="160.1" r="2.5" fill="var(--series3)"/><circle cx="107.7" cy="167.3" r="2.5" fill="var(--series3)"/><circle cx="171.4" cy="176.9" r="2.5" fill="var(--series3)"/><circle cx="235.1" cy="174.5" r="2.5" fill="var(--series3)"/><circle cx="298.9" cy="176.9" r="2.5" fill="var(--series3)"/><circle cx="362.6" cy="176.9" r="2.5" fill="var(--series3)"/><circle cx="426.3" cy="176.9" r="2.5" fill="var(--series3)"/><circle cx="490.0" cy="176.9" r="2.5" fill="var(--series3)"/><polyline fill="none" stroke="var(--series)" stroke-width="2" stroke-dasharray="6 3" points="44.0,160.1 107.7,117.0 171.4,97.9 235.1,93.1 298.9,81.1 362.6,81.1 426.3,81.1 490.0,81.1"/><circle cx="44.0" cy="160.1" r="2.5" fill="var(--series)"/><circle cx="107.7" cy="117.0" r="2.5" fill="var(--series)"/><circle cx="171.4" cy="97.9" r="2.5" fill="var(--series)"/><circle cx="235.1" cy="93.1" r="2.5" fill="var(--series)"/><circle cx="298.9" cy="81.1" r="2.5" fill="var(--series)"/><circle cx="362.6" cy="81.1" r="2.5" fill="var(--series)"/><circle cx="426.3" cy="81.1" r="2.5" fill="var(--series)"/><circle cx="490.0" cy="81.1" r="2.5" fill="var(--series)"/><polyline fill="none" stroke="var(--series)" stroke-width="3"  points="44.0,150.6 107.7,107.4 171.4,95.5 235.1,93.1 298.9,85.9 362.6,83.5 426.3,81.1 490.0,81.1"/><circle cx="44.0" cy="150.6" r="3.5" fill="var(--series)"/><circle cx="107.7" cy="107.4" r="3.5" fill="var(--series)"/><circle cx="171.4" cy="95.5" r="3.5" fill="var(--series)"/><circle cx="235.1" cy="93.1" r="3.5" fill="var(--series)"/><circle cx="298.9" cy="85.9" r="3.5" fill="var(--series)"/><circle cx="362.6" cy="83.5" r="3.5" fill="var(--series)"/><circle cx="426.3" cy="81.1" r="3.5" fill="var(--series)"/><circle cx="490.0" cy="81.1" r="3.5" fill="var(--series)"/><text x="498" y="30" fill="var(--muted)" style="fill:var(--muted)">one try 36.5%</text><text x="498" y="48" fill="var(--series2)" style="fill:var(--series2)">retry 44.8%</text><text x="498" y="66" fill="var(--series3)" style="fill:var(--series3)">naive 29.2%</text><text x="498" y="84" fill="var(--series)" style="fill:var(--series)">the climb 70.8%</text><text x="498" y="102" fill="var(--series)" style="fill:var(--series)">the climb 70.8%</text><text x="267" y="276" text-anchor="middle" class="muted">pass</text></svg></div>
 <h3>Loop by loop</h3>
 <div class="tbl" id="arms"><table><thead><tr><th>loop</th><th class="num">right after pass 1</th><th class="num">right after pass 8</th><th class="num">model calls</th><th class="num">passes per problem</th></tr></thead><tbody><tr><td>one try</td><td class="num">36.5%</td><td class="num"><b>36.5%</b> <span class="muted">(35 of 96)</span></td><td class="num">96</td><td class="num">1.00</td></tr><tr><td>retry (told only &quot;not right&quot;)</td><td class="num">36.5%</td><td class="num"><b>44.8%</b> <span class="muted">(43 of 96)</span></td><td class="num">271</td><td class="num">2.82</td></tr><tr><td>naive (re-reads its own work)</td><td class="num">36.5%</td><td class="num"><b>29.2%</b> <span class="muted">(28 of 96)</span></td><td class="num">369</td><td class="num">3.84</td></tr><tr><td>the climb, no memory between problems</td><td class="num">36.5%</td><td class="num"><b>70.8%</b> <span class="muted">(68 of 96)</span></td><td class="num">267</td><td class="num">2.78</td></tr><tr><td>the climb</td><td class="num">40.6%</td><td class="num"><b>70.8%</b> <span class="muted">(68 of 96)</span></td><td class="num">264</td><td class="num">2.75</td></tr></tbody></table><p class="small">The naive loop, with nobody checking: 5 problems went from wrong to right, and <span class="fail">16 held a right answer at some pass and ended wrong</span>.</p></div>
@@ -138,18 +310,12 @@ One step per line, then ANSWER: number</pre></details><div><div><span class="pas
 <p class="small">The problems were sorted into three tiers before anything was measured: easy (expected right at the first try), climb (expected wrong first, reachable with checked steps) and wall (expected out of reach). The tiers are predictions, and this table shows where they were wrong.</p>
 <div class="tbl" id="tiers"><table><thead><tr><th>tier</th><th class="num">problems</th><th class="num">one try</th><th class="num">retry</th><th class="num">naive</th><th class="num">climb, no memory</th><th class="num">the climb</th></tr></thead><tbody><tr><td>easy</td><td class="num">24</td><td class="num">91.7%</td><td class="num">95.8%</td><td class="num">62.5%</td><td class="num">95.8%</td><td class="num"><b>95.8%</b></td></tr><tr><td>climb</td><td class="num">48</td><td class="num">27.1%</td><td class="num">41.7%</td><td class="num">27.1%</td><td class="num">89.6%</td><td class="num"><b>93.8%</b></td></tr><tr><td>wall</td><td class="num">24</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num">8.3%</td><td class="num"><b>0.0%</b></td></tr></tbody></table></div>
 <h3>Each part's own number</h3>
-<div class="tbl" id="parts"><table><thead><tr><th>part</th><th>measured</th><th>what it is</th></tr></thead><tbody><tr><td><b>The lift</b></td><td>36.5% right at one try, 70.8% after the climb: 34.4 points</td><td class="small muted">what checked depth added over a single try</td></tr><tr><td><b>Depth multiplier</b></td><td>1.94×</td><td class="small muted">right after the climb ÷ right at one try</td></tr><tr><td><b>The memory</b></td><td>332 checked steps held. It was asked 561 times for a step a problem had to do; 38 of those steps were in it, and the map found 29 (76.3%)</td><td class="small muted">measured against an exact list of everything stored</td></tr><tr><td><b>What the memory changed</b></td><td>home: 68 with the memory, 68 without; passes of the model: 264 against 267</td><td class="small muted">the same climb with and without memory between problems</td></tr><tr><td><b>GPU reuse</b></td><td>7.00× faster to the first word of a reply on 12 later passes (5.6 s continuing the conversation, 39.3 s starting from nothing)</td><td class="small muted">Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24</td></tr><tr><td><b>Cost of depth</b></td><td>2.75 model calls per problem for the climb, against 1; 12720 tokens written against 3867</td><td class="small muted">the price of the lift, in compute</td></tr></tbody></table><svg class="diagram" viewBox="0 0 600 300" role="img" aria-label="The memory: twelve chambers holding 332 kept steps"><line x1="150" y1="150" x2="150" y2="45" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="250" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="212" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="88" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="250" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="512" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="212" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="88" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="50" y1="118" x2="512" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="50" y1="118" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="550" y1="182" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="550" y1="182" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="450" y1="255" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="450" y1="255" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="350" y1="182" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="350" y1="182" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="388" y1="65" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><circle cx="150" cy="150" r="24.6" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="150" y="154" text-anchor="middle" style="font-size:12px">51</text><circle cx="150" cy="45" r="27.2" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="150" y="49" text-anchor="middle" style="font-size:12px">74</text><circle cx="250" cy="118" r="17.3" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="250" y="122" text-anchor="middle" style="font-size:12px">9</text><circle cx="212" cy="235" r="19.7" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="212" y="239" text-anchor="middle" style="font-size:12px">19</text><circle cx="88" cy="235" r="16.3" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="88" y="239" text-anchor="middle" style="font-size:12px">6</text><circle cx="50" cy="118" r="21.8" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="50" y="122" text-anchor="middle" style="font-size:12px">31</text><circle cx="512" cy="65" r="19.9" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="512" y="69" text-anchor="middle" style="font-size:12px">20</text><circle cx="550" cy="182" r="15.5" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="550" y="186" text-anchor="middle" style="font-size:12px">4</text><circle cx="450" cy="255" r="17.0" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="450" y="259" text-anchor="middle" style="font-size:12px">8</text><circle cx="350" cy="182" r="20.8" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="350" y="186" text-anchor="middle" style="font-size:12px">25</text><circle cx="388" cy="65" r="15.1" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="388" y="69" text-anchor="middle" style="font-size:12px">3</text><circle cx="450" cy="150" r="28.0" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="450" y="154" text-anchor="middle" style="font-size:12px">82</text><text x="300" y="292" text-anchor="middle" class="muted">the memory at the end of the run: 332 kept steps across its twelve chambers</text></svg></div>
-
-<h2 id="wall">The wall</h2>
-<p>These are the problems the climb did not reach, in red, with where each one stopped. They are here because a climb that always wins is the one not to believe. Some have nothing to climb by: finding two primes from their product gives no partial credit, so there is no step to keep. Others can be split, and the model still could not hold the pieces together within the passes allowed.</p>
-<div class="tbl" id="wallList"><table><thead><tr><th>tier</th><th>the problem</th><th class="num">passes</th><th>where it stopped</th></tr></thead><tbody><tr><td>wall</td><td class="small">The number 17819 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 1 false, answered 1829. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 5 × x = 3450. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 5 lines true, 0 false, answered 200. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 20 × 29 × 12 × 32.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 2 false, answered 206880. Still left to do: <code>180000 + 900 × 30 + 60 × 30 + 6960 × 2</code></td></tr><tr><td>wall</td><td class="small">Work out 29 × (12 × 32 - 16 × 20) - 18 × (16 × 32 - 12 × 29) + 6 × (16 × 20 - 12 × 12).</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 1 false, answered 1056. Still left to do: <code>1856 - 18 × (512 - 12 × 29) + 1056</code></td></tr><tr><td>wall</td><td class="small">The number 31897 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 1 false, answered prime × prime. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 8 × x = 9429. Find x.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>easy</td><td class="small">A current of 2 A flows through a 6 Ω resistor. Voltage = current × resistance. How many volts?</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, answered 72. Still left to do: <code>12</code></td></tr><tr><td>wall</td><td class="small">Work out 14 × 18 × 13 × 48.</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 4 false, answered 998,304,128. Still left to do: <code>(2020 + (5 + 7) × 100 + 50 + 6) × 48</code></td></tr><tr><td>wall</td><td class="small">Work out 18 × (13 × 48 - 15 × 14) - 27 × (15 × 48 - 13 × 18) + 6 × (15 × 14 - 13 × 13).</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 3 false, answered -2300. Still left to do: <code>7452 - 27 × 486 + 246</code></td></tr><tr><td>wall</td><td class="small">The number 38407 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">2</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 2 false, answered prime × prime. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 7 × x = 1408. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 11 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>climb</td><td class="small">A current of 17 A flows through a 41 Ω resistor. Power = current × current × resistance. How many watts?</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 3 false, answered 15829. Still left to do: <code>200 × 40 + 80 × 40 + 9 × 40 + 289</code></td></tr><tr><td>wall</td><td class="small">Work out 32 × 12 × 23 × 41.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 3 lines true, 2 false, answered 355212. Still left to do: <code>350000 + 2000 + 1200 + 80 + 8832</code></td></tr><tr><td>wall</td><td class="small">Work out 12 × (23 × 41 - 17 × 32) - 13 × (17 × 41 - 23 × 12) + 2 × (17 × 32 - 23 × 23).</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 1 false, answered 4788 - 6221 + 14. Still left to do: <code>4788 - 13 × (697 - 200 - 70 - 6) + 2 × (17 × 32 - 529)</code></td></tr><tr><td>wall</td><td class="small">The number 33233 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 11 false, answered 1. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 9 × x = 22204. Find x.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 20 × 26 × 29 × 30.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 0 lines true, 4 false, answered 539000. Still left to do: <code>300000 + 150000 + 2400</code></td></tr><tr><td>wall</td><td class="small">Work out 26 × (29 × 30 - 15 × 20) - 11 × (15 × 30 - 29 × 26) + 3 × (15 × 20 - 29 × 29).</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 5 false, answered 19097. Still left to do: <code>14000 + 800 + 20 - 11 × -304 + 3 × -541</code></td></tr><tr><td>wall</td><td class="small">The number 25019 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, answered 210. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 5 × x = 12282. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>climb</td><td class="small">Three carts move the same way: 26 kg at 11 m/s, 25 kg at 17 m/s and 12 kg at 29 m/s. Total momentum = 26 × 11 + 25 × 17 + 12 × 29. What is it in kg m/s?</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 1 false, answered 1053. Still left to do: <code>711 + 12 × 29</code></td></tr><tr><td>wall</td><td class="small">Work out 26 × 11 × 17 × 29.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 6 false, answered 1356218. Still left to do: <code>97000 + 200 + 40 + 36000 + 7200 + 540 + 18</code></td></tr><tr><td>wall</td><td class="small">Work out 11 × (17 × 29 - 12 × 26) - 25 × (12 × 29 - 17 × 11) + 9 × (12 × 26 - 17 × 17).</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 3 false, answered -2037. Still left to do: <code>1991 - 25 × 161 + 207</code></td></tr><tr><td>climb</td><td class="small">A tank is 17 cm long, 27 cm wide and 22 cm deep. Volume = length × width × depth. How many cubic centimetres?</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 2 false, answered 12,908. Still left to do: <code>9000 + 100 + 80 + 918</code></td></tr><tr><td>wall</td><td class="small">The number 29143 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 0 false, answered 441. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 7 × x = 5032. Find x.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 36 × 19 × 21 × 28.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 2 false, answered 4069128. Still left to do: <code>(14200 + (8 + 8) × 10 + 4) × 28</code></td></tr><tr><td>wall</td><td class="small">Work out 19 × (21 × 28 - 18 × 36) - 23 × (18 × 28 - 21 × 19) + 9 × (18 × 36 - 21 × 21).</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 3 false, answered 3568. Still left to do: <code>660 - 23 × (504 - 21 × 19) + 9 × 7</code></td></tr></tbody></table><p class="small">28 of 96 problems were not reached: 1 easy, 3 climb, 24 wall.</p></div>
-
-<h2 id="claims">The claims, registered before the run</h2>
-<p>Every claim and its bar was committed before the model saw a sealed problem: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">CLAIMS.md</a>. The code and settings were frozen by hash before the run: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/SEAL.md">SEAL.md</a>. The verdicts are worked out on this page from the recorded runs. A claim that failed stays here, failed, in red.</p>
-<div class="tbl" id="claimsTable"><table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody><tr><td><b>C1</b> The climb lifts</td><td class="small">the climb gets at least 20 points more of the sealed problems right by its last pass than one try does, and more by an exact two-sided McNemar test, p &lt; 0.05</td><td class="small">one try 36.5%, the climb 70.8%: 34.4 points; 33 problems only the climb got home, 0 only the one try, p = 2.33e-10</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C2</b> Checking is what does it</td><td class="small">the climb gets more of the sealed problems right by its last pass than the retry loop does with the same number of passes, by the same test, p &lt; 0.05</td><td class="small">retry 44.8%, the climb 70.8%; 26 problems only the climb got home, 1 only the retry loop, p = 4.17e-7</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C3</b> Left alone, it does not climb</td><td class="small">the naive loop, at its last pass, has at most 5 points more of the sealed problems right than one try</td><td class="small">one try 36.5%, naive at its last pass 29.2%: -7.3 points</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C4</b> The memory earns its place</td><td class="small">with the memory, the climb gets at least as many sealed problems home as without it, and takes fewer passes of the model to do it</td><td class="small">home: 68 with the memory, 68 without; passes of the model: 264 with, 267 without</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C5</b> Easy is easy</td><td class="small">at least 80% of the easy tier right at one try</td><td class="small">91.7% of the 24 easy problems right at one try</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C6</b> The climb tier climbs</td><td class="small">on the climb tier, at most 50% right at one try, and at least 40 points more after the climb</td><td class="small">27.1% of the 48 climb-tier problems right at one try, 93.8% after the climb: 66.7 points</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C7</b> The wall holds</td><td class="small">at most 20% of the wall tier home after the climb</td><td class="small">0 of the 24 wall problems home after the climb (0.0%)</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C8</b> Each pass squares what is left</td><td class="small">on the climb tier, after every pass the share not yet home is at most the square of the share not yet home one pass earlier</td><td class="small">share not home after each pass: 64.6%, 29.2%, 18.8%, 16.7%, 10.4%, 8.3%, 6.3%, 6.3%; it held at 1 of 7 steps</td><td><span class="fail">FAIL</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr></tbody></table></div>
-
-<h2 id="how">How it works</h2>
-<p>One pass has four steps. They repeat until the answer is right or the climb stops.</p>
+<div class="tbl" id="parts"><table><thead><tr><th>part</th><th>measured</th><th>what it is</th></tr></thead><tbody><tr><td><b>The lift</b></td><td>36.5% right at one try, 70.8% after the climb: 34.4 points</td><td class="small muted">what checked depth added over a single try</td></tr><tr><td><b>Depth multiplier</b></td><td>1.94×</td><td class="small muted">right after the climb ÷ right at one try</td></tr><tr><td><b>The memory</b></td><td>332 checked steps held. It was asked 561 times for a step a problem had to do; 38 of those steps were in it, and the map found 29 (76.3%)</td><td class="small muted">measured against an exact list of everything stored</td></tr><tr><td><b>What the memory changed</b></td><td>home: 68 with the memory, 68 without; passes of the model: 264 against 267</td><td class="small muted">the same climb with and without memory between problems</td></tr><tr><td><b>GPU reuse</b></td><td>7.00× faster to the first word of a reply on 12 later passes (5.6 s continuing the conversation, 39.3 s starting from nothing)</td><td class="small muted">Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24</td></tr><tr><td><b>Cost of depth</b></td><td>2.75 model calls per problem for the climb, against 1; 12720 tokens written against 3867</td><td class="small muted">the price of the lift, in compute</td></tr></tbody></table><svg class="diagram" viewBox="0 0 600 300" role="img" aria-label="The memory: twelve chambers holding 332 kept steps"><line x1="150" y1="150" x2="150" y2="45" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="250" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="212" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="88" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="150" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="250" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="512" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="150" y1="45" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="212" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="250" y1="118" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="88" y2="235" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="212" y1="235" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="50" y2="118" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="88" y1="235" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="50" y1="118" x2="512" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="50" y1="118" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="550" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="512" y1="65" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="550" y1="182" x2="450" y2="255" stroke="var(--line)" stroke-width="1"/><line x1="550" y1="182" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="450" y1="255" x2="350" y2="182" stroke="var(--line)" stroke-width="1"/><line x1="450" y1="255" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="350" y1="182" x2="388" y2="65" stroke="var(--line)" stroke-width="1"/><line x1="350" y1="182" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><line x1="388" y1="65" x2="450" y2="150" stroke="var(--line)" stroke-width="1"/><circle cx="150" cy="150" r="24.6" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="150" y="154" text-anchor="middle" style="font-size:12px">51</text><circle cx="150" cy="45" r="27.2" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="150" y="49" text-anchor="middle" style="font-size:12px">74</text><circle cx="250" cy="118" r="17.3" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="250" y="122" text-anchor="middle" style="font-size:12px">9</text><circle cx="212" cy="235" r="19.7" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="212" y="239" text-anchor="middle" style="font-size:12px">19</text><circle cx="88" cy="235" r="16.3" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="88" y="239" text-anchor="middle" style="font-size:12px">6</text><circle cx="50" cy="118" r="21.8" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="50" y="122" text-anchor="middle" style="font-size:12px">31</text><circle cx="512" cy="65" r="19.9" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="512" y="69" text-anchor="middle" style="font-size:12px">20</text><circle cx="550" cy="182" r="15.5" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="550" y="186" text-anchor="middle" style="font-size:12px">4</text><circle cx="450" cy="255" r="17.0" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="450" y="259" text-anchor="middle" style="font-size:12px">8</text><circle cx="350" cy="182" r="20.8" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="350" y="186" text-anchor="middle" style="font-size:12px">25</text><circle cx="388" cy="65" r="15.1" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="388" y="69" text-anchor="middle" style="font-size:12px">3</text><circle cx="450" cy="150" r="28.0" fill="var(--series)" opacity="0.85" stroke="var(--line)"/><text x="450" y="154" text-anchor="middle" style="font-size:12px">82</text><text x="300" y="292" text-anchor="middle" class="muted">the memory at the end of the run: 332 kept steps across its twelve chambers</text></svg></div></div></details>
+    <details class="honest reveal" id="wall" style="max-width:none"><summary>The wall</summary><div class="in legacy"><p>These are the problems the climb did not reach, in red, with where each one stopped. They are here because a climb that always wins is the one not to believe. Some have nothing to climb by: finding two primes from their product gives no partial credit, so there is no step to keep. Others can be split, and the model still could not hold the pieces together within the passes allowed.</p>
+<div class="tbl" id="wallList"><table><thead><tr><th>tier</th><th>the problem</th><th class="num">passes</th><th>where it stopped</th></tr></thead><tbody><tr><td>wall</td><td class="small">The number 17819 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 1 false, answered 1829. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 5 × x = 3450. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 5 lines true, 0 false, answered 200. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 20 × 29 × 12 × 32.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 2 false, answered 206880. Still left to do: <code>180000 + 900 × 30 + 60 × 30 + 6960 × 2</code></td></tr><tr><td>wall</td><td class="small">Work out 29 × (12 × 32 - 16 × 20) - 18 × (16 × 32 - 12 × 29) + 6 × (16 × 20 - 12 × 12).</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 1 false, answered 1056. Still left to do: <code>1856 - 18 × (512 - 12 × 29) + 1056</code></td></tr><tr><td>wall</td><td class="small">The number 31897 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 1 false, answered prime × prime. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 8 × x = 9429. Find x.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>easy</td><td class="small">A current of 2 A flows through a 6 Ω resistor. Voltage = current × resistance. How many volts?</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, answered 72. Still left to do: <code>12</code></td></tr><tr><td>wall</td><td class="small">Work out 14 × 18 × 13 × 48.</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 4 false, answered 998,304,128. Still left to do: <code>(2020 + (5 + 7) × 100 + 50 + 6) × 48</code></td></tr><tr><td>wall</td><td class="small">Work out 18 × (13 × 48 - 15 × 14) - 27 × (15 × 48 - 13 × 18) + 6 × (15 × 14 - 13 × 13).</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 3 false, answered -2300. Still left to do: <code>7452 - 27 × 486 + 246</code></td></tr><tr><td>wall</td><td class="small">The number 38407 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">2</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 2 false, answered prime × prime. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 7 × x = 1408. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 11 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>climb</td><td class="small">A current of 17 A flows through a 41 Ω resistor. Power = current × current × resistance. How many watts?</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 3 false, answered 15829. Still left to do: <code>200 × 40 + 80 × 40 + 9 × 40 + 289</code></td></tr><tr><td>wall</td><td class="small">Work out 32 × 12 × 23 × 41.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 3 lines true, 2 false, answered 355212. Still left to do: <code>350000 + 2000 + 1200 + 80 + 8832</code></td></tr><tr><td>wall</td><td class="small">Work out 12 × (23 × 41 - 17 × 32) - 13 × (17 × 41 - 23 × 12) + 2 × (17 × 32 - 23 × 23).</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 1 false, answered 4788 - 6221 + 14. Still left to do: <code>4788 - 13 × (697 - 200 - 70 - 6) + 2 × (17 × 32 - 529)</code></td></tr><tr><td>wall</td><td class="small">The number 33233 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 11 false, answered 1. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 9 × x = 22204. Find x.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 2 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 20 × 26 × 29 × 30.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 0 lines true, 4 false, answered 539000. Still left to do: <code>300000 + 150000 + 2400</code></td></tr><tr><td>wall</td><td class="small">Work out 26 × (29 × 30 - 15 × 20) - 11 × (15 × 30 - 29 × 26) + 3 × (15 × 20 - 29 × 29).</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 5 false, answered 19097. Still left to do: <code>14000 + 800 + 20 - 11 × -304 + 3 × -541</code></td></tr><tr><td>wall</td><td class="small">The number 25019 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, answered 210. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 5 × x = 12282. Find x.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>climb</td><td class="small">Three carts move the same way: 26 kg at 11 m/s, 25 kg at 17 m/s and 12 kg at 29 m/s. Total momentum = 26 × 11 + 25 × 17 + 12 × 29. What is it in kg m/s?</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 1 false, answered 1053. Still left to do: <code>711 + 12 × 29</code></td></tr><tr><td>wall</td><td class="small">Work out 26 × 11 × 17 × 29.</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 6 false, answered 1356218. Still left to do: <code>97000 + 200 + 40 + 36000 + 7200 + 540 + 18</code></td></tr><tr><td>wall</td><td class="small">Work out 11 × (17 × 29 - 12 × 26) - 25 × (12 × 29 - 17 × 11) + 9 × (12 × 26 - 17 × 17).</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 3 false, answered -2037. Still left to do: <code>1991 - 25 × 161 + 207</code></td></tr><tr><td>climb</td><td class="small">A tank is 17 cm long, 27 cm wide and 22 cm deep. Volume = length × width × depth. How many cubic centimetres?</td><td class="num">6</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 1 line true, 2 false, answered 12,908. Still left to do: <code>9000 + 100 + 80 + 918</code></td></tr><tr><td>wall</td><td class="small">The number 29143 is two prime numbers multiplied together. Find the two primes. Give the answer as: prime × prime.</td><td class="num">3</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 0 false, answered 441. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">A whole number x satisfies x × x × x + 7 × x = 5032. Find x.</td><td class="num">4</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 0 lines true, 0 false, no answer given. Nothing to climb by: no step of it can be checked.</td></tr><tr><td>wall</td><td class="small">Work out 36 × 19 × 21 × 28.</td><td class="num">5</td><td class="small"><span class="fail">not reached</span>: stalled. Last pass: 3 lines true, 2 false, answered 4069128. Still left to do: <code>(14200 + (8 + 8) × 10 + 4) × 28</code></td></tr><tr><td>wall</td><td class="small">Work out 19 × (21 × 28 - 18 × 36) - 23 × (18 × 28 - 21 × 19) + 9 × (18 × 36 - 21 × 21).</td><td class="num">8</td><td class="small"><span class="fail">not reached</span>. Last pass: 1 line true, 3 false, answered 3568. Still left to do: <code>660 - 23 × (504 - 21 × 19) + 9 × 7</code></td></tr></tbody></table><p class="small">28 of 96 problems were not reached: 1 easy, 3 climb, 24 wall.</p></div></div></details>
+    <details class="honest reveal" id="claims" style="max-width:none"><summary>The claims, registered before the run</summary><div class="in legacy"><p>Every claim and its bar was committed before the model saw a sealed problem: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">CLAIMS.md</a>. The code and settings were frozen by hash before the run: <a href="https://github.com/sjgant80-hub/the-climb/blob/main/SEAL.md">SEAL.md</a>. The verdicts are worked out on this page from the recorded runs. A claim that failed stays here, failed, in red.</p>
+<div class="tbl" id="claimsTable"><table><thead><tr><th>claim</th><th>bar</th><th>result on the published sealed run</th><th>verdict</th><th>on this device</th></tr></thead><tbody><tr><td><b>C1</b> The climb lifts</td><td class="small">the climb gets at least 20 points more of the sealed problems right by its last pass than one try does, and more by an exact two-sided McNemar test, p &lt; 0.05</td><td class="small">one try 36.5%, the climb 70.8%: 34.4 points; 33 problems only the climb got home, 0 only the one try, p = 2.33e-10</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C2</b> Checking is what does it</td><td class="small">the climb gets more of the sealed problems right by its last pass than the retry loop does with the same number of passes, by the same test, p &lt; 0.05</td><td class="small">retry 44.8%, the climb 70.8%; 26 problems only the climb got home, 1 only the retry loop, p = 4.17e-7</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C3</b> Left alone, it does not climb</td><td class="small">the naive loop, at its last pass, has at most 5 points more of the sealed problems right than one try</td><td class="small">one try 36.5%, naive at its last pass 29.2%: -7.3 points</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C4</b> The memory earns its place</td><td class="small">with the memory, the climb gets at least as many sealed problems home as without it, and takes fewer passes of the model to do it</td><td class="small">home: 68 with the memory, 68 without; passes of the model: 264 with, 267 without</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C5</b> Easy is easy</td><td class="small">at least 80% of the easy tier right at one try</td><td class="small">91.7% of the 24 easy problems right at one try</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C6</b> The climb tier climbs</td><td class="small">on the climb tier, at most 50% right at one try, and at least 40 points more after the climb</td><td class="small">27.1% of the 48 climb-tier problems right at one try, 93.8% after the climb: 66.7 points</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C7</b> The wall holds</td><td class="small">at most 20% of the wall tier home after the climb</td><td class="small">0 of the 24 wall problems home after the climb (0.0%)</td><td><span class="pass">PASS</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr><tr><td><b>C8</b> Each pass squares what is left</td><td class="small">on the climb tier, after every pass the share not yet home is at most the square of the share not yet home one pass earlier</td><td class="small">share not home after each pass: 64.6%, 29.2%, 18.8%, 16.7%, 10.4%, 8.3%, 6.3%, 6.3%; it held at 1 of 7 steps</td><td><span class="fail">FAIL</span></td><td class="small"><span class="badge">NOT RE-RUN ON THIS DEVICE YET</span></td></tr></tbody></table></div></div></details>
+    <details class="honest reveal" id="how" style="max-width:none"><summary>How it works</summary><div class="in legacy"><p>One pass has four steps. They repeat until the answer is right or the climb stops.</p>
 <svg class="diagram" viewBox="0 0 900 250" role="img" aria-labelledby="beatTitle"><title id="beatTitle">Try, check, remember, reuse: the model writes working, the checker keeps true lines and drops false ones, kept lines go into the memory, and the next pass starts from what was kept</title>
   <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--muted)"/></marker></defs>
   <g fill="none" stroke="var(--line)" stroke-width="2"><rect x="20" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="250" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="480" y="60" width="180" height="70" rx="10" fill="var(--panel)"/><rect x="710" y="60" width="170" height="70" rx="10" fill="var(--panel)"/>
@@ -180,10 +346,8 @@ Left to do: 400 + 180 + 216 + 512
 One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 400 + 180 = 580 <span class="small muted">kept: crossed off</span></div><div><span class="fail">✗</span> 580 + 216 = 800 <span class="small muted">dropped</span></div><div><span class="fail">✗</span> 800 + 512 = 1322 <span class="small muted">dropped</span></div><div><span class="fail">✗</span> ANSWER: 1322 <span class="small fail">not right</span></div></div><div class="small"><b>Left to do:</b> <code>580 + 200 + 10 + 6 + 512</code></div></div><div class="stage ok"><b>Pass 4 of 8</b><details><summary class="small">what the checker said first</summary><pre>Right: 400 + 180 = 580
 Wrong: 580 + 216 = 800; 800 + 512 = 1322
 Left to do: 580 + 200 + 10 + 6 + 512
-One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 580 + 200 = 780 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 780 + 10 = 790 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 790 + 6 = 796 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 796 + 512 = 1308 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> ANSWER: 1308 <span class="small pass">right: home</span></div></div></div><div class="verdict ok">Right at pass 4: the checker ruled the answer right.</div></div></div>
-
-<h2 id="blueprint">Blueprint</h2>
-<div class="tbl"><table><thead><tr><th>part</th><th>what it is</th><th>status</th></tr></thead><tbody>
+One step per line, then ANSWER: number</pre></details><div><div><span class="pass">✓</span> 580 + 200 = 780 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 780 + 10 = 790 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 790 + 6 = 796 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> 796 + 512 = 1308 <span class="small muted">kept: crossed off</span></div><div><span class="pass">✓</span> ANSWER: 1308 <span class="small pass">right: home</span></div></div></div><div class="verdict ok">Right at pass 4: the checker ruled the answer right.</div></div></div></div></details>
+    <details class="honest reveal" id="blueprint" style="max-width:none"><summary>Blueprint</summary><div class="in legacy"><div class="tbl"><table><thead><tr><th>part</th><th>what it is</th><th>status</th></tr></thead><tbody>
 <tr><td>The model</td><td>Llama 3.2 1B Instruct at 4 bits, run by WebLLM 0.2.79 on WebGPU, always picking its likeliest word, so a run can be repeated.</td><td class="pass">built, measured</td></tr>
 <tr><td>Exact arithmetic</td><td>Every number is a fraction of two whole numbers, so nothing is rounded and "equal" means equal (<code>src/exact.mjs</code>).</td><td data-bind="bp.exact"><span class="pass">built, gated 94/98 (4 equivalent, with the reason written down)</span></td></tr>
 <tr><td>The checker</td><td>Reads each line of a reply as a claim, keeps the true ones, drops the false ones, and rules on the answer. Three kinds of finish line: an exact value, two factors that multiply to a number, a value that satisfies an equation (<code>src/checker.mjs</code>).</td><td data-bind="bp.checker"><span class="pass">built, gated 51/53 (2 equivalent, with the reason written down)</span></td></tr>
@@ -195,10 +359,8 @@ One step per line, then ANSWER: number</pre></details><div><div><span class="pas
 <tr><td>Scores and claims</td><td>Every number and every verdict on this page (<code>src/score.mjs</code>, <code>src/claims.mjs</code>).</td><td data-bind="bp.score"><span class="pass">built, gated 79/80 (1 equivalent, with the reason written down)</span></td></tr>
 <tr><td>GPU reuse</td><td>WebLLM keeps its work for a conversation that continues. The loops are written as one growing conversation so that it can. Measured on this page.</td><td data-bind="bp.reuse"><span class="pass">measured: 7.00× faster to start a reply</span></td></tr>
 </tbody></table></div>
-<p class="small">Each part marked "gated" has been through a mutation gate: a tool changes the code in small ways, one at a time, and the tests must notice every change. The counts are read from <a href="data/gates.json">the gate record</a>, which the repository's own checks re-run on every push.</p>
-
-<h2 id="adopt">Adoption: what this does for your business</h2>
-<div class="grid two">
+<p class="small">Each part marked "gated" has been through a mutation gate: a tool changes the code in small ways, one at a time, and the tests must notice every change. The counts are read from <a href="data/gates.json">the gate record</a>, which the repository's own checks re-run on every push.</p></div></details>
+    <details class="honest reveal" id="adopt" style="max-width:none"><summary>Adoption: what this does for your business</summary><div class="in legacy"><div class="grid two">
 <div class="card"><h3>Where it fits</h3><p>Work with several steps where each step can be checked by code, and where a wrong result costs more than a slow one. Reconciling a ledger line by line. Filling a form whose fields must add up. Converting units through a chain. Generating code that has to pass tests. In each, the checking code already exists or is cheap to write. What this pattern adds is the loop around it: keep what passed, split what failed, try again from there.</p></div>
 <div class="card"><h3>Where it does not</h3><p>Work with no checker. If nothing outside the model can say whether a step is right, there is nothing to keep and nothing to drop, and this page's own "naive" loop shows what is left. Judgement calls, open questions and anything creative are out. So are problems with no partial credit: see <a href="#wall">the wall</a>.</p></div>
 </div>
@@ -209,10 +371,8 @@ One step per line, then ANSWER: number</pre></details><div><div><span class="pas
   <li>Run the job one try only, on your own cases, and count how often it finishes. That is your baseline.</li>
   <li>Run it with the loop: check each step, keep, split, retry. Count again, and count the extra model calls.</li>
   <li>Keep the cases it never finishes. They tell you where a person, or a bigger model, is still needed.</li>
-</ol>
-
-<h2 id="brochure">For buyers: the case, without hedging</h2>
-<div class="grid two">
+</ol></div></details>
+    <details class="honest reveal" id="brochure" style="max-width:none"><summary>For buyers: the case, without hedging</summary><div class="in legacy"><div class="grid two">
 <div class="card"><h3>What it is</h3><p>A measured demonstration that a small model on ordinary hardware can be made to finish multi-step work it fails at cold, when every step is checked by code. <span data-bind="b.what">On the sealed problems it took the share finished from 36.5% at one try to 70.8%.</span></p></div>
 <div class="card"><h3>What it is not</h3><p>It is not a calculator and it is not a general assistant. It does not make the model smarter. It makes the model's mistakes visible one step at a time and gives it another go at the wrong step only. <span data-bind="b.not">It did not reach 28 of 96 problems.</span></p></div>
 <div class="card"><h3>Chief executive</h3><p>The question to ask of any AI system is what happens when it is wrong. Here a wrong step is caught by code before it reaches an answer, and the system either gets there or says it did not. Both are counted on this page.</p></div>
@@ -244,22 +404,346 @@ One step per line, then ANSWER: number</pre></details><div><div><span class="pas
 </ul>
 <h3>The case for the board</h3>
 <p>Most of the cost of AI in real work is the wrong answer nobody noticed. This shows one way to stop it at the step where it happens, on hardware you already own, with the result measured in public and the failures left in. <span data-bind="b.board">On 96 sealed problems, checked depth took a small model from 35 finished to 68, at 2.75 times the model calls, and it says plainly which 28 it could not do.</span> Start with one job that has a checker, and decide on your own numbers.</p>
-<div id="walk"><h3>A simulated buyer walk</h3><p class="small muted">A simulated buyer walk: a local 7B model played four buyers and read this page&#39;s text cold, part by part, one buyer at a time (24 readings, plus four earlier single readings). It is a model&#39;s first-pass audit, not a customer&#39;s opinion. Kar checked every gap it raised against the page and the page at phone width (375 px). The real gaps are below, each with what was changed. Not changed: &quot;the wall&quot; in the opening already links to the wall (the reading saw text only); the wide tables already scroll inside their own boxes on a phone; lines that only quoted the footer back.</p><details><summary>The CFO of a 400-person firm: could follow the headline, not the words or the multipliers behind it</summary><ul><li>&quot;The naive loop, with nobody checking&quot;: what is the naive loop? <span class="muted">→ a list of the words this page uses now opens Start here: pass, checker, the climb, one try, a retry, the naive loop, the three kinds of problem, the wall, stalled, nothing to climb by, the sealed run, gated</span></li><li>&quot;model calls, climb against one try 2.75×&quot;: 2.75 times what? <span class="muted">→ the chip now reads &quot;model calls the climb makes, against one try: 2.75× as many&quot;</span></li><li>&quot;Home at pass 2&quot; <span class="muted">→ now &quot;Right at pass 2&quot;, in the run view and in the list of problems</span></li><li>&quot;The saving is measured, not assumed&quot;: which saving? <span class="muted">→ now: the time this saves is measured on this page (step 7 of Start here)</span></li></ul></details><details><summary>The CTO who also owns security: wanted each measured factor to say what it measures</summary><ul><li>&quot;measured: 7.00×&quot;: 7 times what? <span class="muted">→ now &quot;measured: 7.00× faster to start a reply&quot;; elsewhere, faster to the first word of a reply</span></li><li>&quot;gated 79/80 (1 equivalent, with the reason written down)&quot;: where is the reason? <span class="muted">→ the list of words now says what gated and equivalent mean and names the file the reason is written in (src/witness.baseline.json)</span></li><li>&quot;Run step 5 to see your own device&#39;s numbers&quot;: step 5 of what? <span class="muted">→ now &quot;step 5 of Start here (the measurement)&quot;</span></li></ul></details><details><summary>The COO who runs the teams that would use it: wanted the wall&#39;s reasons in plain words</summary><ul><li>&quot;not reached: stalled&quot; and &quot;Nothing to climb by&quot; are cryptic <span class="muted">→ the list now says a problem stalled when the model gave the same reply to the same ruling, and has nothing to climb by when no part of it can be checked on its own</span></li><li>&quot;UNVERIFIED HERE&quot; beside claims reads as if they were never verified <span class="muted">→ now &quot;NOT RE-RUN ON THIS DEVICE YET&quot;: the claims were verified on the published run, and the column is for the visitor&#39;s own run</span></li><li>&quot;One pass has four beats&quot; <span class="muted">→ now &quot;four steps&quot;</span></li></ul></details><details><summary>The owner-manager of a 12-person business, no technical staff: needed the easy, climb and wall labels and the sealed run explained</summary><ul><li>&quot;wall&quot; and &quot;climb&quot; labels are not explained <span class="muted">→ the list now says the three kinds were predictions made before anything was measured: easy (expected right at the first try), climb (expected wrong at first, reachable with checked steps), wall (expected out of reach)</span></li><li>&quot;sealed problems&quot;, &quot;sealed set&quot; <span class="muted">→ the list now says the sealed run is the measurement, on problems the build was never tuned on, made after every file that could change a result was frozen</span></li><li>the expandable lines in the run view were too small to tap on a phone (22 px tall) <span class="muted">→ they are now at least 28 px tall; nothing on the page scrolls sideways at 375 px</span></li></ul></details></div>
-
-<h2 id="paper">White paper: checked depth</h2>
-<p><b>The problem.</b> A language model can be asked to look at its own answer and improve it. Left alone, this helps less than it sounds. The model has no way to know which part was wrong, so a second look is as likely to break a right step as to fix a wrong one, and by the fifth pass it is mostly reading its own mistakes back.</p>
+<div id="walk"><h3>A simulated buyer walk</h3><p class="small muted">A simulated buyer walk: a local 7B model played four buyers and read this page&#39;s text cold, part by part, one buyer at a time (24 readings, plus four earlier single readings). It is a model&#39;s first-pass audit, not a customer&#39;s opinion. Kar checked every gap it raised against the page and the page at phone width (375 px). The real gaps are below, each with what was changed. Not changed: &quot;the wall&quot; in the opening already links to the wall (the reading saw text only); the wide tables already scroll inside their own boxes on a phone; lines that only quoted the footer back.</p><details><summary>The CFO of a 400-person firm: could follow the headline, not the words or the multipliers behind it</summary><ul><li>&quot;The naive loop, with nobody checking&quot;: what is the naive loop? <span class="muted">→ a list of the words this page uses now opens Start here: pass, checker, the climb, one try, a retry, the naive loop, the three kinds of problem, the wall, stalled, nothing to climb by, the sealed run, gated</span></li><li>&quot;model calls, climb against one try 2.75×&quot;: 2.75 times what? <span class="muted">→ the chip now reads &quot;model calls the climb makes, against one try: 2.75× as many&quot;</span></li><li>&quot;Home at pass 2&quot; <span class="muted">→ now &quot;Right at pass 2&quot;, in the run view and in the list of problems</span></li><li>&quot;The saving is measured, not assumed&quot;: which saving? <span class="muted">→ now: the time this saves is measured on this page (step 7 of Start here)</span></li></ul></details><details><summary>The CTO who also owns security: wanted each measured factor to say what it measures</summary><ul><li>&quot;measured: 7.00×&quot;: 7 times what? <span class="muted">→ now &quot;measured: 7.00× faster to start a reply&quot;; elsewhere, faster to the first word of a reply</span></li><li>&quot;gated 79/80 (1 equivalent, with the reason written down)&quot;: where is the reason? <span class="muted">→ the list of words now says what gated and equivalent mean and names the file the reason is written in (src/witness.baseline.json)</span></li><li>&quot;Run step 5 to see your own device&#39;s numbers&quot;: step 5 of what? <span class="muted">→ now &quot;step 5 of Start here (the measurement)&quot;</span></li></ul></details><details><summary>The COO who runs the teams that would use it: wanted the wall&#39;s reasons in plain words</summary><ul><li>&quot;not reached: stalled&quot; and &quot;Nothing to climb by&quot; are cryptic <span class="muted">→ the list now says a problem stalled when the model gave the same reply to the same ruling, and has nothing to climb by when no part of it can be checked on its own</span></li><li>&quot;UNVERIFIED HERE&quot; beside claims reads as if they were never verified <span class="muted">→ now &quot;NOT RE-RUN ON THIS DEVICE YET&quot;: the claims were verified on the published run, and the column is for the visitor&#39;s own run</span></li><li>&quot;One pass has four beats&quot; <span class="muted">→ now &quot;four steps&quot;</span></li></ul></details><details><summary>The owner-manager of a 12-person business, no technical staff: needed the easy, climb and wall labels and the sealed run explained</summary><ul><li>&quot;wall&quot; and &quot;climb&quot; labels are not explained <span class="muted">→ the list now says the three kinds were predictions made before anything was measured: easy (expected right at the first try), climb (expected wrong at first, reachable with checked steps), wall (expected out of reach)</span></li><li>&quot;sealed problems&quot;, &quot;sealed set&quot; <span class="muted">→ the list now says the sealed run is the measurement, on problems the build was never tuned on, made after every file that could change a result was frozen</span></li><li>the expandable lines in the run view were too small to tap on a phone (22 px tall) <span class="muted">→ they are now at least 28 px tall; nothing on the page scrolls sideways at 375 px</span></li></ul></details></div></div></details>
+    <details class="honest reveal" id="paper" style="max-width:none"><summary>White paper: checked depth</summary><div class="in legacy"><p><b>The problem.</b> A language model can be asked to look at its own answer and improve it. Left alone, this helps less than it sounds. The model has no way to know which part was wrong, so a second look is as likely to break a right step as to fix a wrong one, and by the fifth pass it is mostly reading its own mistakes back.</p>
 <p><b>The idea.</b> Put something outside the model that can rule on a step. Then each pass can stand on what the last pass got right. The steps that were checked are never in doubt again; only the wrong ones are worked again, in smaller pieces. Depth then adds up instead of washing out.</p>
 <p><b>What this page tests.</b> Whether that is true for a small model on real hardware, by how much, and at what cost. It runs the same problems four ways and reports all four. It also tests the stronger version of the idea, that each pass should shrink what is left as fast as squaring does, and reports whether it held.</p>
 <p><b>What it does not show.</b> That the model learned anything. The model at the last pass is the model at the first. What changed is what it was standing on.</p>
 <p><b>The one rule.</b> A number is on this page only because the checker or the clock measured it in a recorded run. Nothing here was written down first and hoped for. Where a prediction was wrong, the prediction and the measurement are both shown.</p>
-<p class="small muted" data-bind="paper.sources">The numbers on this page: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24; 96 problems made by src/tasks.mjs from the seed in data/settings.json; 8 passes at most.</p>
+<p class="small muted" data-bind="paper.sources">The numbers on this page: Llama 3.2 1B, 4-bit, in a browser tab (WebLLM 0.2.79), intel gen-12lp, 2026-11-24; 96 problems made by src/tasks.mjs from the seed in data/settings.json; 8 passes at most.</p></div></details>
+  </div>
+</section>
+
 <footer>
-  <p>The Climb · built by Kar · MIT licence (holder Simon Gant) · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a> ·
+  <div class="wrap frow">
+    <div><div class="brand">The Climb</div><div class="fnote"><p>The Climb · built by Kar · MIT licence (holder Simon Gant) · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a> ·
   <a href="https://github.com/sjgant80-hub/the-climb">source</a> · <a href="https://github.com/sjgant80-hub/the-climb/blob/main/CLAIMS.md">claims</a> · <a href="data/published.json">the published runs</a></p>
-  <p>Powered by the Konomi architecture, created by Thomas Frumkin.</p>
+  <p></p><br>Powered by the Konomi architecture, created by Thomas Frumkin.</div></div>
+    <div class="taglist"><span>›</span> AI you own. Proof you can re-run.<br><span>›</span> A small model that says "I can't tell."<br><span>›</span> Nothing leaves your browser.</div>
+  </div>
 </footer>
-</main>
 <script type="module">
+// vendor/house/crystal.js, inlined byte for byte (imports read the scopes above; export removed)
+const CRYSTAL = (() => {
+// crystal.js — the house hero: a living crystal, drawn by one fragment shader. No library is fetched.
+//
+// It is a real solid, not a picture of one: a 32-faced gem (an icosahedron cut by a dodecahedron) that every pixel's
+// ray is intersected with exactly. Light is bent into the body, carried through it, turned back where it cannot leave
+// and bent out again, once for each of three colours, so the facets split light the way glass does. The body absorbs
+// as it carries; its edges burn; a slow lattice of light moves inside it.
+//
+// And it is bound to data. Each of the 32 faces holds a state the page gives it: dark, proven (cyan), sealing (gold,
+// breathing) or failed (red, kept). A page lights a face only for a receipt it has re-derived, so the crystal is the
+// record, not decoration. A face can be pointed at and pressed: the page is told which one.
+//
+//   mount(canvas, options) → { setFaces, setEnergy, setCentre, onHover, onPick, redraw, destroy, FACES }   or null
+// It decides nothing. With no WebGL the canvas is left as it is (the page's own background shows) and null is returned.
+
+const FACES = 32;
+const STATE = { dark: 0, proven: 1, sealing: 2, failed: 3 };
+const PHI = (1 + Math.sqrt(5)) / 2;
+const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+// ten icosahedron normals, then six dodecahedron normals; each stands for a pair of opposite faces (i and i + 16)
+const NORMALS = [[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1], [0, 1, PHI + 1], [0, -1, PHI + 1], [PHI + 1, 0, 1], [-PHI - 1, 0, 1], [1, PHI + 1, 0], [-1, PHI + 1, 0], [0, PHI, 1], [0, -PHI, 1], [1, 0, PHI], [-1, 0, PHI], [PHI, 1, 0], [-PHI, 1, 0]].map(unit);
+const R_ICOSA = 1.2, R_CUT = 1.37, CAMERA = 5.2, FOV = 0.8284;
+
+const VERT = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+const FRAG = `
+precision highp float;
+uniform vec2 uRes; uniform float uTime; uniform mat3 uRot; uniform mat3 uInv; uniform vec3 uCen;
+uniform vec3 uN[16]; uniform float uR[16]; uniform float uState[32]; uniform float uEnergy; uniform float uHot;
+const vec3 CYAN = vec3(0.286, 0.910, 0.784); const vec3 GOLD = vec3(1.0, 0.812, 0.416); const vec3 RED = vec3(1.0, 0.42, 0.42);
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float hash3(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float noise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash3(i), hash3(i + vec3(1,0,0)), f.x), mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x), mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z); }
+vec3 tint(float s){ return s < 0.5 ? vec3(0.0) : s < 1.5 ? CYAN : s < 2.5 ? GOLD : RED; }
+// the solid: sixteen pairs of planes. Where a ray enters and leaves, through which faces, and how near an edge.
+bool solid(vec3 ro, vec3 rd, out float tN, out float tF, out vec3 nN, out vec3 nF, out float sN, out float sF, out float eN, out float eF, out float iN){
+  tN = -1e9; tF = 1e9; float tN2 = -1e9; float tF2 = 1e9; nN = vec3(0.0); nF = vec3(0.0); sN = 0.0; sF = 0.0; iN = -1.0;
+  for (int i = 0; i < 16; i++){
+    vec3 n = uN[i]; float dn = dot(rd, n); dn = abs(dn) < 1e-5 ? 1e-5 : dn; float po = dot(ro, n);
+    float tp = (uR[i] - po) / dn; float tm = (-uR[i] - po) / dn;
+    float ta; float tb; vec3 na; vec3 nb; float sa; float sb; float ia;
+    if (dn < 0.0) { ta = tp; na = n; sa = uState[i]; ia = float(i); tb = tm; nb = -n; sb = uState[i + 16]; }
+    else { ta = tm; na = -n; sa = uState[i + 16]; ia = float(i) + 16.0; tb = tp; nb = n; sb = uState[i]; }
+    if (ta > tN) { tN2 = tN; tN = ta; nN = na; sN = sa; iN = ia; } else if (ta > tN2) { tN2 = ta; }
+    if (tb < tF) { tF2 = tF; tF = tb; nF = nb; sF = sb; } else if (tb < tF2) { tF2 = tb; }
+  }
+  eN = tN - tN2; eF = tF2 - tF;
+  return tN < tF && tF > 0.0;
+}
+// what the crystal reflects and bends: a dark sea, three lamps, a horizon, slow bars of light
+vec3 world(vec3 d){
+  vec3 c = mix(vec3(0.0006, 0.003, 0.006), vec3(0.006, 0.028, 0.042), pow(clamp(d.y * 0.5 + 0.5, 0.0, 1.0), 1.5));
+  c += CYAN * 2.2 * pow(max(dot(d, normalize(vec3(0.6, 0.7, 0.4))), 0.0), 26.0);
+  c += vec3(0.6, 0.8, 1.0) * 1.3 * pow(max(dot(d, normalize(vec3(-0.7, 0.3, 0.5))), 0.0), 60.0);
+  c += GOLD * 0.55 * pow(max(dot(d, normalize(vec3(0.1, -0.8, 0.5))), 0.0), 28.0);
+  c += vec3(0.15, 0.5, 0.45) * exp(-abs(d.y) * 14.0) * 0.12;
+  float bars = smoothstep(0.9, 1.0, sin(d.x * 9.0 + d.z * 5.0 + uTime * 0.07) * 0.5 + 0.5);
+  return c + vec3(0.5, 0.9, 0.85) * bars * 0.22 * smoothstep(-0.2, 0.6, d.y);
+}
+// one colour of light through the body: bent in, carried, turned back once if it cannot leave, bent out
+vec3 through(vec3 p, vec3 rd, vec3 n, float ior, out float path, out float sX, out float eX){
+  vec3 d = refract(rd, n, 1.0 / ior); vec3 o = p - n * 0.003; vec3 leave = d; path = 0.0; sX = 0.0; eX = 1.0;
+  for (int b = 0; b < 2; b++){
+    float tN; float tF; vec3 nN; vec3 nF; float sN; float sF; float eN; float eF; float iN;
+    solid(o, d, tN, tF, nN, nF, sN, sF, eN, eF, iN);
+    path += max(tF, 0.0);
+    if (b == 0) { sX = sF; eX = eF; }
+    vec3 r = refract(d, -nF, ior);
+    if (dot(r, r) > 0.0) { leave = r; break; }
+    vec3 q = o + d * tF; d = reflect(d, -nF); o = q - nF * 0.003; leave = d;
+  }
+  return leave;
+}
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 ro = vec3(0.0, 0.0, ${CAMERA.toFixed(1)}); vec3 rd = normalize(vec3(uv * ${FOV.toFixed(4)}, -1.0));
+  // the room: depth, a breath of light round the crystal, three drifts of dust
+  vec3 col = mix(vec3(0.0002, 0.0008, 0.0016), vec3(0.0016, 0.0042, 0.0085), exp(-length(uv - vec2(0.36, 0.3)) * 1.9));
+  float near = length(cross(rd, uCen - ro));
+  col += CYAN * 0.010 * uEnergy * exp(-near * near * 0.42);
+  for (int k = 0; k < 3; k++){
+    float sc = 14.0 + float(k) * 11.0; vec2 g = uv * sc + vec2(uTime * 0.010 * float(k + 1), uTime * 0.006);
+    vec2 id = floor(g); vec2 f = fract(g) - 0.5; float h = hash(id + float(k) * 17.0);
+    vec2 o = vec2(hash(id + 3.1), hash(id + 7.7)) - 0.5; float tw = 0.5 + 0.5 * sin(uTime * (0.6 + h * 2.0) + h * 40.0);
+    col += vec3(0.56, 0.91, 0.85) * smoothstep(0.045, 0.0, length(f - o * 0.7)) * step(0.9, h) * tw * (0.22 - 0.05 * float(k));
+  }
+  vec3 lo = uInv * (ro - uCen); vec3 ld = uInv * rd;
+  float tN; float tF; vec3 nN; vec3 nF; float sN; float sF; float eN; float eF; float iN;
+  if (solid(lo, ld, tN, tF, nN, nF, sN, sF, eN, eF, iN) && tN > 0.0){
+    vec3 p = lo + ld * tN; float facing = max(dot(-ld, nN), 0.0); float fres = pow(1.0 - facing, 3.0);
+    float pa; float sa; float ea; float pathG; float sX; float eX;
+    vec3 dr = through(p, ld, nN, 1.41, pa, sa, ea);
+    vec3 dg = through(p, ld, nN, 1.45, pathG, sX, eX);
+    vec3 db = through(p, ld, nN, 1.50, pa, sa, ea);
+    vec3 bent = vec3(world(uRot * dr).r, world(uRot * dg).g, world(uRot * db).b);
+    vec3 body = exp(-pathG * vec3(1.5, 0.38, 0.52) * 0.8);
+    vec3 c = mix(bent * body, world(uRot * reflect(ld, nN)), 0.06 + 0.9 * fres);
+    vec3 cN = tint(sN); vec3 cX = tint(sX);
+    float breath = (sN > 1.5 && sN < 2.5) ? 0.6 + 0.4 * sin(uTime * 1.8 + iN) : 1.0;
+    c += cN * (0.012 + 0.10 * fres) * breath * uEnergy;                 // a lit face glows from within
+    c += cX * 0.03 * body.g * uEnergy;                                  // the far side, seen through the body
+    float edge = exp(-eN * 90.0) + 0.35 * exp(-eX * 60.0) * body.g;      // edges burn
+    c += mix(vec3(0.16, 0.55, 0.48), cN, step(0.5, sN)) * edge * (0.35 + 0.45 * uEnergy);
+    vec3 mid = p + refract(ld, nN, 1.0 / 1.45) * pathG * 0.5;           // the lattice of light inside
+    c += CYAN * pow(noise(mid * 3.2 + vec3(0.0, uTime * 0.12, uTime * 0.05)), 3.0) * 0.05 * uEnergy;
+    c += vec3(0.5, 0.9, 0.85) * (1.0 - step(0.5, abs(iN - uHot))) * 0.07;         // the face under the pointer
+    col = c;
+  }
+  col *= 1.0 - 0.5 * pow(length(uv * vec2(0.75, 1.0)), 2.2);
+  col = 1.0 - exp(-col * 2.4);
+  col = pow(col, vec3(0.4545)); col = mix(col, col * col * (3.0 - 2.0 * col), 0.65) + (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.014;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+const mul = (m, v) => [m[0] * v[0] + m[3] * v[1] + m[6] * v[2], m[1] * v[0] + m[4] * v[1] + m[7] * v[2], m[2] * v[0] + m[5] * v[1] + m[8] * v[2]];
+// rot(yaw, pitch) → the turn of the crystal as a column-major 3×3, and its inverse (its transpose)
+function rot(yaw, pitch) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cx = Math.cos(pitch), sx = Math.sin(pitch);
+  const m = [cy, sx * sy, -cx * sy, 0, cx, sx, sy, -sx * cy, cx * cy];
+  return { m, inv: [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]] };
+}
+// faceAt(u, v, aspect, turn, centre, cut) → the face (0…31) a ray through that point of the screen enters by, or -1.
+// u, v run 0…1 from the top left. The same sum the shader does, so the page and the picture agree on which face it is.
+function faceAt(u, v, aspect, turn, centre, cut) {
+  const x = (u - 0.5) * aspect * FOV, y = (0.5 - v) * FOV, l = Math.hypot(x, y, 1);
+  const rd = mul(turn.inv, [x / l, y / l, -1 / l]), ro = mul(turn.inv, [-centre[0], -centre[1], CAMERA - centre[2]]);
+  let tN = -1e9, tF = 1e9, face = -1;
+  for (let i = 0; i < 16; i++) {
+    const n = NORMALS[i], r = i < 10 ? R_ICOSA : cut;
+    let dn = rd[0] * n[0] + rd[1] * n[1] + rd[2] * n[2]; if (Math.abs(dn) < 1e-5) dn = 1e-5;
+    const po = ro[0] * n[0] + ro[1] * n[1] + ro[2] * n[2], tp = (r - po) / dn, tm = (-r - po) / dn;
+    const ta = dn < 0 ? tp : tm, tb = dn < 0 ? tm : tp;
+    if (ta > tN) { tN = ta; face = dn < 0 ? i : i + 16; }
+    if (tb < tF) tF = tb;
+  }
+  return tN < tF && tN > 0 ? face : -1;
+}
+
+function mount(canvas, options) {
+  const opt = options || {};
+  let gl = null;
+  try { gl = canvas && canvas.getContext ? canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' }) : null; } catch { gl = null; }
+  if (!gl) return null;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+  const vs = sh(gl.VERTEX_SHADER, VERT), fs = sh(gl.FRAGMENT_SHADER, FRAG);
+  if (!vs || !fs) return null;
+  const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const a = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+  const U = (n) => gl.getUniformLocation(prog, n);
+  const u = { res: U('uRes'), time: U('uTime'), rot: U('uRot'), inv: U('uInv'), cen: U('uCen'), n: U('uN[0]'), r: U('uR[0]'), state: U('uState[0]'), energy: U('uEnergy'), hot: U('uHot') };
+  gl.uniform3fv(u.n, new Float32Array(NORMALS.flat()));
+  const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const S = { faces: new Float32Array(FACES), energy: opt.energy ?? 0.8, target: opt.energy ?? 0.8, centre: [0, 0, 0], yaw: 0.5, pitch: 0.18, vy: 0, vp: 0, drag: null, hot: -1, scale: 1, ms: 16, t: 0, last: 0, seen: true, raf: 0, dead: false, hover: null, pick: null, turn: rot(0.5, 0.18), cut: R_CUT };
+  const size = () => {
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, d = Math.min(1.5, globalThis.devicePixelRatio || 1) * S.scale;
+    const W = Math.max(2, Math.round(w * d)), H = Math.max(2, Math.round(h * d));
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    S.centre = typeof opt.centre === 'function' ? opt.centre(w, h) : [w > 820 ? 1.25 : 0, w > 820 ? 0 : 0.55, 0];
+  };
+  const draw = () => {
+    size();
+    S.turn = rot(S.yaw, S.pitch);
+    S.cut = R_CUT + 0.07 * Math.sin(S.t * 0.35);                        // the cut faces open and close: it breathes
+    const r = new Float32Array(16); for (let i = 0; i < 16; i++) r[i] = i < 10 ? R_ICOSA : S.cut;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform2f(u.res, canvas.width, canvas.height); gl.uniform1f(u.time, S.t); gl.uniformMatrix3fv(u.rot, false, new Float32Array(S.turn.m)); gl.uniformMatrix3fv(u.inv, false, new Float32Array(S.turn.inv));
+    gl.uniform3f(u.cen, S.centre[0], S.centre[1], S.centre[2]); gl.uniform1fv(u.r, r); gl.uniform1fv(u.state, S.faces); gl.uniform1f(u.energy, S.energy); gl.uniform1f(u.hot, S.hot);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  const frame = (now) => {
+    if (S.dead) return;
+    S.raf = requestAnimationFrame(frame);
+    if (!S.seen || (typeof document !== 'undefined' && document.hidden)) { S.last = now; return; }
+    const dt = Math.min(0.05, (now - (S.last || now)) / 1000); S.last = now;
+    S.ms += ((dt * 1000) - S.ms) * 0.08;
+    if (S.ms > 30 && S.scale > 0.45) S.scale *= 0.92; else if (S.ms < 14 && S.scale < 1) S.scale = Math.min(1, S.scale * 1.03);
+    if (!still) { S.t += dt; if (!S.drag) { S.yaw += dt * 0.16 + S.vy; S.pitch += (0.18 + 0.12 * Math.sin(S.t * 0.22) - S.pitch) * 0.02 + S.vp; S.vy *= 0.94; S.vp *= 0.94; } }
+    S.energy += (S.target - S.energy) * 0.04;
+    draw();
+  };
+  const where = (e) => { const b = canvas.getBoundingClientRect(); return [(e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height, b.width / b.height]; };
+  const face = (e) => { const [x, y, asp] = where(e); return faceAt(x, y, asp, S.turn, S.centre, S.cut); };
+  const down = (e) => { S.drag = { x: e.clientX, y: e.clientY, moved: 0 }; };
+  const move = (e) => {
+    if (S.drag) { const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y; S.drag.x = e.clientX; S.drag.y = e.clientY; S.drag.moved += Math.abs(dx) + Math.abs(dy); S.yaw += dx * 0.006; S.pitch = Math.max(-1.2, Math.min(1.2, S.pitch + dy * 0.006)); S.vy = dx * 0.0006; S.vp = 0; if (still) draw(); return; }
+    const f = face(e); if (f !== S.hot) { S.hot = f; canvas.style.cursor = f >= 0 ? 'pointer' : 'grab'; if (S.hover) S.hover(f, e); if (still) draw(); }
+  };
+  const up = (e) => { const d = S.drag; S.drag = null; if (d && d.moved < 6 && S.pick) { const f = face(e); if (f >= 0) S.pick(f, e); } };
+  const leave = () => { S.drag = null; if (S.hot !== -1) { S.hot = -1; if (S.hover) S.hover(-1, null); if (still) draw(); } };
+  canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointerleave', leave);
+  canvas.style.cursor = 'grab'; canvas.style.touchAction = 'pan-y';
+  let io = null;
+  if (typeof IntersectionObserver === 'function') { io = new IntersectionObserver((es) => { for (const e of es) S.seen = e.isIntersecting; }); io.observe(canvas); }
+  const onSize = () => { if (still) draw(); };
+  if (typeof addEventListener === 'function') addEventListener('resize', onSize);
+  draw();
+  S.raf = requestAnimationFrame(frame);
+  return {
+    FACES,
+    setFaces(states) { for (let i = 0; i < FACES; i++) S.faces[i] = Number(states && states[i]) || 0; if (still) draw(); },
+    setEnergy(x) { S.target = Math.max(0, Math.min(1.4, Number(x) || 0)); },
+    setCentre(fn) { opt.centre = fn; if (still) draw(); },
+    onHover(fn) { S.hover = fn; }, onPick(fn) { S.pick = fn; },
+    redraw: draw,
+    destroy() { S.dead = true; cancelAnimationFrame(S.raf); if (io) io.disconnect(); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointerleave', leave); if (typeof removeEventListener === 'function') removeEventListener('resize', onSize); },
+  };
+}
+return { FACES, STATE, NORMALS, rot, faceAt, mount };
+})();
+
+// vendor/house/house.js, inlined byte for byte (imports read the scopes above; export removed)
+const HOUSE = (() => {
+// house.js — the kit's motion: what makes a house page feel alive without saying anything untrue.
+//   reveal(root)          sections rise into place as they are reached
+//   light(root)           a soft light follows the pointer across cards
+//   count(el, text)       a receipt's number runs up to its value when first seen; the value written is exactly `text`
+//   bindScroll(crystal)   the crystal's light answers the scroll: brightest at the top, quieter as the page is read
+// Each is safe to call with nothing to act on, and does nothing where motion is not wanted.
+const still = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function reveal(root) {
+  const els = root && root.querySelectorAll ? [...root.querySelectorAll('.reveal')] : [];
+  if (typeof IntersectionObserver !== 'function' || still()) return;                 // nothing is hidden, so nothing needs showing
+  if (root.documentElement && root.documentElement.classList) root.documentElement.classList.add('js');   // only now may .reveal start hidden
+  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }, { threshold: 0.14 });
+  for (const el of els) io.observe(el);
+}
+
+function light(root) {
+  if (!root || !root.addEventListener || still()) return;
+  root.addEventListener('pointermove', (e) => {
+    const card = e.target && e.target.closest ? e.target.closest('.act') : null;
+    if (!card) return;
+    const b = card.getBoundingClientRect();
+    card.style.setProperty('--mx', `${e.clientX - b.left}px`); card.style.setProperty('--my', `${e.clientY - b.top}px`);
+  });
+}
+
+// count(el, text): text is the final, true text of the number (for example "31.6%"). Only its digits move, and only
+// on the way in: when it stops, the element holds exactly `text`.
+function count(el, text) {
+  const final = String(text), m = final.match(/^(\D*)(\d+(?:\.\d+)?)(.*)$/);
+  if (!el || !m || still() || typeof requestAnimationFrame !== 'function' || typeof IntersectionObserver !== 'function') { if (el) el.textContent = final; return; }
+  const to = Number(m[2]), places = (m[2].split('.')[1] || '').length;
+  el.textContent = final;
+  const io = new IntersectionObserver((es) => {
+    if (!es.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    const t0 = performance.now(), run = (now) => { const k = Math.min(1, (now - t0) / 900), ease = 1 - (1 - k) ** 3; el.textContent = k < 1 ? `${m[1]}${(to * ease).toFixed(places)}${m[3]}` : final; if (k < 1) requestAnimationFrame(run); };
+    requestAnimationFrame(run);
+  }, { threshold: 0.4 });
+  io.observe(el);
+}
+
+function bindScroll(crystal, base) {
+  if (!crystal || typeof addEventListener !== 'function') return;
+  const top = base ?? 1, set = () => crystal.setEnergy(top * Math.max(0.35, 1 - (globalThis.scrollY || 0) / ((globalThis.innerHeight || 800) * 1.2)));
+  addEventListener('scroll', set, { passive: true }); set();
+}
+return { reveal, light, count, bindScroll };
+})();
+
+// vendor/house/receipts.mjs, inlined byte for byte (imports read the scopes above; export removed)
+const RECEIPTS = (() => {
+// receipts.mjs — read a flagship's own published page for the numbers it has sealed, so that the front door never
+// types a number: it reads each one from the page that proves it, and can read it again, live, in a visitor's tab.
+//
+// A flagship's page is baked by its own gated kernels from its own sealed records. What is read here is what that
+// page says, word for word; this file adds nothing and rounds nothing.
+//
+//   text(html)              the page as a visitor reads it: the body, tags gone, spaces single
+//   claims(html)            every pre-registered claim on the page: [{ id, name, result, pass }] (pass: true, false,
+//                           or null while it is still sealing). Both layouts are read: the table and the house stack.
+//   headline(repo, html)    that build's headline receipt, or null when its page does not state one:
+//                           { was, now, of, label }  (was → now, out of how many, in plain words)
+//   extra(repo, html)       further receipts a page states: [{ key, value, of, label }]
+// Pure and total.
+const str = (x) => (typeof x === 'string' ? x : '');
+const un = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+const flat = (s) => un(s.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+
+// shown(html) → the body as markup, without its scripts and styles: only what a visitor is shown is ever read
+const shown = (html) => { const h = str(html), a = h.search(/<body[\s>]/i); return a === -1 ? '' : h.slice(a).replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' '); };
+
+function text(html) { return flat(shown(html)); }
+
+function claims(html) {
+  const h = shown(html), out = [], seen = new Set();
+  const add = (id, name, result, pass) => { if (!seen.has(id)) { seen.add(id); out.push({ id, name: flat(name), result: flat(result), pass }); } };
+  // the table: <tr><td><b>C1</b> name</td><td>the bar</td><td>what happened</td><td><span class="pass">PASS</span>…
+  for (const m of h.matchAll(/<tr><td><b>([A-Z]\d{1,2})<\/b>([^<]*)<\/td>([\s\S]*?)<\/tr>/g)) {
+    const cells = [...m[3].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((c) => c[1]);
+    add(m[1], m[2], cells[1] ?? '', /class="pass">PASS</.test(m[3]) ? true : /class="fail">FAIL</.test(m[3]) ? false : null);
+  }
+  // the house stack: <div class="srow"><div class="d">K1</div><div class="nm"><b>name</b><span>what happened</span><span class="tag cy">pass</span>
+  for (const m of h.matchAll(/<div class="srow[^"]*"><div class="d">([A-Z]\d{1,2})<\/div><div class="nm"><b>([^<]*)<\/b><span>([\s\S]*?)<\/span><span class="tag (cy|rd|gd)">/g)) add(m[1], m[2], m[3], m[4] === 'cy' ? true : m[4] === 'rd' ? false : null);
+  return out;
+}
+
+const READ = {
+  'the-climb': (t) => { const m = t.match(/right at the first try (\d+(?:\.\d+)?%) \((\d+) of (\d+)\) right after the climb (\d+(?:\.\d+)?%) \((\d+) of \3\)/); return m && { was: m[1], now: m[4], of: Number(m[3]), label: 'sealed problems right: at one try, then after the climb' }; },
+  'the-crystal': (t) => { const m = t.match(/one try (\d+(?:\.\d+)?%), the crystal (\d+(?:\.\d+)?%) of (\d+) problems/); return m && { was: m[1], now: m[2], of: Number(m[3]), label: 'sealed problems right: at one try, then as a crystal' }; },
+  'the-verifier-set': (t) => { const m = t.match(/got (\d+) of (\d+) right; on the \d+ problems that have no answer it gave a number \d+ times\. The lattice brought (\d+) of \2 out/); return m && { was: m[1], now: m[3], of: Number(m[2]), label: 'sealed problems that came out as they should: unchecked, then checked' }; },
+  'the-distillation': (t) => { const m = t.match(/(\d+(?:\.\d+)?%) → (\d+(?:\.\d+)?%) Right, cold, on (\d+) held-out problems/); return m && { was: m[1], now: m[2], of: Number(m[3]), label: 'held-out problems right, cold: before, then after training on its own verified work' }; },
+};
+const MORE = {
+  'the-crystal': (t) => { const m = t.match(/forged replies that bonded (\d+) of (\d+)/); return m ? [{ key: 'forged', value: m[1], of: Number(m[2]), label: 'forged replies that got past the check' }] : []; },
+  'the-verifier-set': (t) => { const m = t.match(/on the (\d+) with no answer it gave a number (\d+) times\. With the checks, \d+ of \d+ came out as they should, and none of those \1 was answered/); return m ? [{ key: 'unanswerable', value: m[2], after: '0', of: Number(m[1]), label: 'confident numbers given to questions that have no answer: unchecked, then checked' }] : []; },
+};
+const own = (map, repo) => (typeof repo === 'string' && Object.prototype.hasOwnProperty.call(map, repo) ? map[repo] : null);
+
+function headline(repo, html) { const f = own(READ, repo); return f ? f(text(html)) || null : null; }
+function extra(repo, html) { const f = own(MORE, repo); return f ? f(text(html)) : []; }
+return { text, claims, headline, extra };
+})();
+
 // src/sha256.mjs, inlined byte for byte (imports read the scopes above; export removed)
 const SHA = (() => {
 // sha256.mjs — SHA-256 of a string's UTF-8 bytes, as lowercase hex. Pure and synchronous, so the lane check that
@@ -2023,6 +2507,36 @@ const ready = (async function start() {
   if (typeof navigator !== 'undefined' && navigator.serviceWorker && typeof location !== 'undefined' && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 window.__climb = { ready, S, runSet, needModel, kvMeasure, rejudge, renderAll, facts, tasksOf, story, storyHTML };
+
+// house-app.js — the house layer. It adds nothing to what this build proves: it waits for the page script above to
+// finish, reads what that script worked out from the sealed run (with the house's receipts reader, vendored), and
+// shows it as receipts, a claim stack and a crystal whose lit faces are this build's claims.
+window.__houseLayer = (async () => {
+  await window.__climb.ready;
+  const KEYS = {"ids":["viewBar","glass","curve","arms","tiers","parts","wallList","claimsTable","trace","money","walk"],"binds":["hl.result","hl.cold","hl.climb","hl.retry","hl.naive","hl.wall","hl.cost","hl.privacy","hl.note","bp.exact","bp.checker","bp.plan","bp.left","bp.memory","bp.loop","bp.tasks","bp.score","bp.reuse","b.what","b.not","b.cost","b.req","b.retry","b.cost2","b.wall","b.board","paper.sources"]};
+  const el = (id) => document.getElementById(id), safe = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const drawn = [...KEYS.ids.map((id) => el(id)), ...KEYS.binds.flatMap((k) => [...document.querySelectorAll(`[data-bind="${k}"]`)])].map((e) => (e && typeof e.innerHTML === 'string' ? e.innerHTML : '')).join(' ');
+  // where the old page writes a number beside its label, the two are read together, as a visitor reads them
+  const said = [["right at the first try","hl.cold"],["right after the climb","hl.climb"]].map(([words, k]) => `${words} ${[...document.querySelectorAll(`[data-bind="${k}"]`)].map((e) => e.innerHTML).join(' ')}`).join(' ');
+  const html = `<body>${drawn} ${said}</body>`, claims = RECEIPTS.claims(html), head = RECEIPTS.headline('the-climb', html), more = RECEIPTS.extra('the-climb', html);
+  const src = '<a class="src" href="data/runs/sealed.json">receipt: the sealed run ↗</a>', passed = claims.filter((c) => c.pass === true).length, failed = claims.filter((c) => c.pass === false);
+  const stats = [];
+  if (head) stats.push(`<div class="stat reveal"><div class="n"><span class="was">${safe(head.was)}</span><span class="arrow">→</span><span class="now">${safe(head.now)}</span></div><div class="lab"><b>Of ${head.of} sealed problems.</b> ${safe(head.label[0].toUpperCase() + head.label.slice(1))}.</div>${src}</div>`);
+  for (const x of more) stats.push(`<div class="stat reveal"><div class="n">${x.after !== undefined ? `<span class="was">${safe(x.value)}</span><span class="arrow">→</span><span class="now">${safe(x.after)}</span>` : `<span class="now">${safe(x.value)}</span><span class="was" style="font-size:.42em"> /${x.of.toLocaleString('en')}</span>`}</div><div class="lab"><b>${safe(x.label[0].toUpperCase() + x.label.slice(1))}.</b> Of ${x.of.toLocaleString('en')}.</div>${src}</div>`);
+  if (claims.length) stats.push(`<div class="stat reveal"><div class="n"><span class="now">${passed}</span><span class="was" style="font-size:.42em"> /${claims.length}</span>${failed.length ? ` <span class="bad" style="font-size:.5em">−${failed.length}</span>` : ''}</div><div class="lab"><b>Pre-registered claims passed.</b> ${failed.length ? `${failed.map((c) => c.id).join(', ')} failed and ${failed.length === 1 ? 'is' : 'are'} kept on the page, in red.` : 'A claim that fails stays on the page, in red.'}</div>${src}</div>`);
+  el('hsReceipts').innerHTML = stats.join('') || '<div class="stat"><div class="n"><span class="wait">—</span></div><div class="lab">The sealed run. <span class="tag gd">sealing now</span></div></div>';
+  el('hsClaims').innerHTML = claims.map((c) => `<div class="srow ${c.pass === false ? 'red' : c.pass === null ? 'gold' : ''}"><div class="d">${c.id}</div><div class="nm"><b>${safe(c.name)}</b><span>${safe(c.result)}</span>${c.pass === true ? '<span class="tag cy">pass</span>' : c.pass === false ? '<span class="tag rd">fail · kept</span>' : '<span class="tag gd">sealing now</span>'}</div></div>`).join('') || '<div class="srow gold"><div class="d">—</div><div class="nm"><span>the sealed run is not published yet</span><span class="tag gd">sealing now</span></div></div>';
+  const rest = `${passed} of ${claims.length} claims passed${failed.length ? ` · ${failed.length} failed and kept` : ''} · point at a face`;
+  el('hsFacet').innerHTML = rest;
+  const crystal = CRYSTAL.mount(el('crystal'), { energy: 0.9 });
+  if (crystal) {
+    crystal.setFaces(Array.from({ length: 32 }, (_, i) => (claims[i] ? (claims[i].pass === true ? 1 : claims[i].pass === false ? 3 : 2) : 0)));
+    crystal.onHover((i) => { const c = claims[i]; el('hsFacet').innerHTML = c ? `<b>${c.id} ${safe(c.name)}</b> · ${c.pass === true ? 'pass' : c.pass === false ? 'FAIL, kept' : 'sealing now'} · ${safe(c.result)}` : rest; });
+    crystal.onPick(() => { const s = el('verdicts'); if (s && s.scrollIntoView) s.scrollIntoView({ behavior: 'smooth' }); });
+    HOUSE.bindScroll(crystal, 0.9);
+  }
+  HOUSE.reveal(document); HOUSE.light(document);
+})();
 </script>
 </body>
 </html>
